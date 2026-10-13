@@ -176,7 +176,7 @@
     <h1>pazaryeri-denetci-mcp — Durum Raporu</h1>
     <p class="sub">
       13 Ekim 2026 · <span class="num">C:\Users\admin\projects\pazaryeri-denetci-mcp</span> · MIT ·
-      <span class="num">34 commit</span> · çalışma ağacı temiz
+      <span class="num">46 commit</span> · çalışma ağacı temiz
     </p>
     <p class="lead">
       Pazaryeri ürün kataloğunu <strong>deterministik kurallarla</strong> denetleyen, bulguları önem
@@ -186,7 +186,8 @@
 
     <h2>Doğrulanmış rakamlar</h2>
     <div class="kpis">
-      <div class="kpi"><b class="num">243</b><span>test (35 dosya) · hepsi yeşil</span></div>
+      <div class="kpi"><b class="num">286</b><span>test (41 dosya) · hepsi yeşil</span></div>
+      <div class="kpi"><b class="num">%100,0</b><span>öneri kalite (mock, 160/160 alan)</span></div>
       <div class="kpi"><b class="num">17</b><span>denetim kuralı · 21 hata türü</span></div>
       <div class="kpi">
         <b class="num">%100,0</b><span>eval precision &amp; recall (1000 ürün)</span>
@@ -260,11 +261,14 @@
         </tr>
         <tr>
           <td class="num">5</td>
-          <td>LLM öneri katmanı (mock ile doğrulanacak)</td>
-          <td><span class="pill todo">bekliyor</span></td>
           <td>
-            <svg width="110" height="8" role="img" aria-label="bekliyor">
-              <rect width="110" height="8" rx="4" fill="#e3e6ec" />
+            LLM öneri katmanı: <code>suggest_fix</code> (öneri-only), prompt injection sınırlama,
+            şema doğrulama, önbellek/kota
+          </td>
+          <td><span class="pill done">tamam</span></td>
+          <td>
+            <svg width="110" height="8" role="img" aria-label="tamam">
+              <rect width="110" height="8" rx="4" fill="#0f766e" />
             </svg>
           </td>
         </tr>
@@ -318,12 +322,12 @@
         </tr>
         <tr>
           <td>Test paketi</td>
-          <td class="n">243 test / 35 dosya</td>
+          <td class="n">286 test / 41 dosya</td>
           <td><code>pnpm run test</code></td>
         </tr>
         <tr>
           <td>MCP Inspector (araç/kaynak/çağrı)</td>
-          <td class="n">6 / 2 / 105 bulgu</td>
+          <td class="n">7 / 2 / 105 bulgu</td>
           <td><code>npx @modelcontextprotocol/inspector --cli …</code></td>
         </tr>
         <tr>
@@ -342,6 +346,58 @@
       Tüm rakamlar bu makinede 13 Ekim 2026'da koşulan komutlardan alındı (Windows 11, Node 26.7.0,
       pnpm 12.11.2). Uydurma değer yoktur; eval ve performans tabloları ilgili komutlarla yeniden
       üretilebilir.
+    </p>
+
+    <h2>Faz 5 — LLM öneri katmanı (kapandı)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Ölçüm / davranış</th>
+          <th class="n">Değer</th>
+          <th>Kaynak</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Öneri kalite kontrolü (mock istemci, 140 ürün)</td>
+          <td class="n">160/160 · %100,0</td>
+          <td><code>pnpm run eval</code> → <code>docs/EVAL.md</code></td>
+        </tr>
+        <tr>
+          <td>Öneri katmanı testleri</td>
+          <td class="n">33 test · 5 dosya</td>
+          <td><code>vitest run packages/suggest</code></td>
+        </tr>
+        <tr>
+          <td>MCP araç yüzeyi</td>
+          <td class="n">7 araç</td>
+          <td>derlenmiş sunucuda <code>tools/list</code></td>
+        </tr>
+        <tr>
+          <td>Gerçek <code>suggest_fix</code> çağrısı (mock)</td>
+          <td class="n">mode mock · model mock-demo · alanlar dolu</td>
+          <td>stdio JSON-RPC, <code>dist/bin.js</code></td>
+        </tr>
+        <tr>
+          <td>Kapalı / anahtarsız yol</td>
+          <td class="n">reason devre-disi · sunucu ayakta</td>
+          <td>stdio JSON-RPC (<code>off</code> ve <code>auto</code>)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="src">
+      Öneri kalite rakamı <strong>model kalitesi değildir</strong>: koşu sahte (mock) istemciyle
+      yapıldı, canlı model ölçümü yapılmadı (anahtar yok) ve bu README/EVAL'de açıkça yazılıdır.
+      Ölçülen, hattın uçtan uca çalıştığıdır: şema doğrulaması, önbellek, önerinin kurallarla
+      yeniden denetimi.
+    </p>
+    <p class="src">
+      Faz 5'te yakalanan iki kusur: (1) öneri katmanındaki kontrol karakteri taraması
+      <code>no-control-regex</code> kuralını düşürüyordu → kod noktası kontrolüne çevrildi; (2) demo
+      istemcinin başlık üretimi tek kelimelik başlıkları 15 karaktere çıkaramadığı için öneri
+      kalitesi %88,75'te kalıyordu → <code>TITLE_MIN</code>'e taşındı, ölçüm %100 oldu ve eşik 1,0'a
+      çekildi (regresyon yakalama). Ayrıca stdio ile elle sonda yaparken stdin hemen kapanınca
+      sunucunun yanıt yazmadan çıktığı görüldü — sonda stdin'i açık tutmalı.
     </p>
 
     <h2>Bu projede yakalanan gerçek tuzaklar (ADR'lere yazıldı)</h2>
@@ -384,11 +440,6 @@
     <h2>Sırada</h2>
     <ul>
       <li><strong>Faz 4 kapanışı:</strong> Vercel deploy + canlı demo linki (kalan tek adım).</li>
-      <li>
-        <strong>Faz 5:</strong> LLM öneri katmanı — <code>suggest_fix</code> aracı, şema doğrulama,
-        önbellek/maliyet sınırı, prompt injection sınırlaması; anahtar olmadan "devre dışı" yolu ve
-        mock ile testler.
-      </li>
       <li>
         <strong>Faz 6:</strong> README son hâli (canlı demo + ekran kaydı + mimari diyagram + eval
         tablosu), GitHub yayını, CI yeşil doğrulaması, v0.1.0 release.
