@@ -1,0 +1,20 @@
+{
+  "name": "@pazaryeri-denetci/catalog-io",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Katalog içe/dışa aktarma: CSV (BOM, Windows-1254, TR sayı biçimi) ve deterministik JSON",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@pazaryeri-denetci/core": "workspace:*",
+    "csv-parse": "^7.0.3"
+  }
+}
