@@ -25,7 +25,8 @@
     "@pazaryeri-denetci/catalog-io": "workspace:*",
     "@pazaryeri-denetci/core": "workspace:*",
     "@pazaryeri-denetci/mock-data": "workspace:*",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "@pazaryeri-denetci/suggest": "workspace:*"
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.3.1",

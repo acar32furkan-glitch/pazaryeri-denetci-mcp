@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@pazaryeri-denetci/core": "workspace:*",
-    "@pazaryeri-denetci/mock-data": "workspace:*"
+    "@pazaryeri-denetci/mock-data": "workspace:*",
+    "@pazaryeri-denetci/suggest": "workspace:*"
   }
 }
