@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>pazaryeri-denetci-mcp — Durum Raporu</title>
+    <style>
+      :root {
+        --ink: #16181d;
+        --muted: #5b6270;
+        --line: #e3e6ec;
+        --card: #f7f8fa;
+        --accent: #0f766e;
+        --warn: #b45309;
+        --ok: #15803d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 32px 28px 56px;
+        font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--ink);
+        background: #fff;
+        line-height: 1.5;
+        max-width: 900px;
+      }
+      h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+      h2 { font-size: 15px; margin: 34px 0 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+      .sub { color: var(--muted); font-size: 13px; margin: 0 0 4px; }
+      .lead { font-size: 14px; margin: 14px 0 0; }
+      .num { font-family: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+      .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 18px 0 0; }
+      .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--card); }
+      .kpi b { display: block; font-size: 24px; letter-spacing: -0.02em; }
+      .kpi span { font-size: 12px; color: var(--muted); }
+      table { border-collapse: collapse; width: 100%; font-size: 13px; }
+      th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { font-size: 12px; color: var(--muted); font-weight: 600; }
+      td.n { text-align: right; font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+      .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+      .done { color: var(--ok); border-color: #bbf7d0; background: #f0fdf4; }
+      .now { color: var(--accent); border-color: #99f6e4; background: #f0fdfa; }
+      .todo { color: var(--muted); }
+      ul { margin: 8px 0 0; padding-left: 20px; font-size: 14px; }
+      li { margin-bottom: 6px; }
+      .box { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; padding: 12px 14px; margin-top: 14px; font-size: 14px; }
+      .box.warn { border-left-color: var(--warn); }
+      code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; background: var(--card); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+      .src { font-size: 12px; color: var(--muted); margin-top: 8px; }
+      footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+      @media print {
+        body { padding: 0; max-width: none; }
+        h2 { break-after: avoid; }
+        table { break-inside: auto; }
+        tr { break-inside: avoid; }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>pazaryeri-denetci-mcp — Durum Raporu</h1>
+    <p class="sub">
+      13 Ekim 2026 · <span class="num">C:\Users\admin\projects\pazaryeri-denetci-mcp</span> · MIT ·
+      <span class="num">34 commit</span> · çalışma ağacı temiz
+    </p>
+    <p class="lead">
+      Pazaryeri ürün kataloğunu <strong>deterministik kurallarla</strong> denetleyen, bulguları önem
+      sırasına göre raporlayan ve bunu bir <strong>MCP sunucusu</strong> üzerinden AI ajanlarına açan
+      açık kaynak araç. Tüm veri sentetiktir; hiçbir araç dış sisteme yazmaz.
+    </p>
+
+    <h2>Doğrulanmış rakamlar</h2>
+    <div class="kpis">
+      <div class="kpi"><b class="num">243</b><span>test (35 dosya) · hepsi yeşil</span></div>
+      <div class="kpi"><b class="num">17</b><span>denetim kuralı · 21 hata türü</span></div>
+      <div class="kpi"><b class="num">%100,0</b><span>eval precision &amp; recall (1000 ürün)</span></div>
+      <div class="kpi"><b class="num">1,36 sn</b><span>10.000 ürün denetimi (7.360 ürün/sn)</span></div>
+    </div>
+
+    <h2>Faz durumu</h2>
+    <table>
+      <thead>
+        <tr><th>Faz</th><th>İçerik</th><th>Durum</th><th style="width:120px">İlerleme</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num">0</td><td>Monorepo iskeleti, kapılar, CI, DECISIONS</td><td><span class="pill done">tamam</span></td><td><svg width="110" height="8" role="img" aria-label="tamam"><rect width="110" height="8" rx="4" fill="#0f766e"/></svg></td></tr>
+        <tr><td class="num">1</td><td>Sentetik üretici (etiketli hata enjeksiyonu) + ilk 6 kural</td><td><span class="pill done">tamam</span></td><td><svg width="110" height="8" role="img" aria-label="tamam"><rect width="110" height="8" rx="4" fill="#0f766e"/></svg></td></tr>
+        <tr><td class="num">2</td><td>Kalan 11 kural, CSV içe aktarma, raporlar, uç durumlar, benchmark</td><td><span class="pill done">tamam</span></td><td><svg width="110" height="8" role="img" aria-label="tamam"><rect width="110" height="8" rx="4" fill="#0f766e"/></svg></td></tr>
+        <tr><td class="num">3</td><td>MCP sunucusu (stdio): 6 araç, 2 kaynak, 2 prompt + Inspector</td><td><span class="pill done">tamam</span></td><td><svg width="110" height="8" role="img" aria-label="tamam"><rect width="110" height="8" rx="4" fill="#0f766e"/></svg></td></tr>
+        <tr><td class="num">4</td><td>Streamable HTTP (güvenlik) + Next.js demo — <em>Vercel deploy bekliyor</em></td><td><span class="pill now">%90</span></td><td><svg width="110" height="8" role="img" aria-label="yüzde doksan"><rect width="110" height="8" rx="4" fill="#e3e6ec"/><rect width="99" height="8" rx="4" fill="#0f766e"/></svg></td></tr>
+        <tr><td class="num">5</td><td>LLM öneri katmanı (mock ile doğrulanacak)</td><td><span class="pill todo">bekliyor</span></td><td><svg width="110" height="8" role="img" aria-label="bekliyor"><rect width="110" height="8" rx="4" fill="#e3e6ec"/></svg></td></tr>
+        <tr><td class="num">6</td><td>Eval/docs son hâli, demo kaydı, GitHub yayını, v0.1.0</td><td><span class="pill todo">bekliyor</span></td><td><svg width="110" height="8" role="img" aria-label="bekliyor"><rect width="110" height="8" rx="4" fill="#e3e6ec"/></svg></td></tr>
+      </tbody>
+    </table>
+
+    <h2>Ölçümler ve kaynakları</h2>
+    <table>
+      <thead><tr><th>Ölçüm</th><th class="n">Değer</th><th>Üreten komut</th></tr></thead>
+      <tbody>
+        <tr><td>Kural bazlı precision / recall (17 kural)</td><td class="n">%100,0 / %100,0</td><td><code>pnpm run eval</code> → <code>docs/EVAL.md</code></td></tr>
+        <tr><td>Etiketli hata yakalama (1000 ürün)</td><td class="n">420 / 420</td><td><code>pnpm run eval:check</code></td></tr>
+        <tr><td>10.000 ürünlük denetim süresi</td><td class="n">1358,7 ms</td><td><code>pnpm run eval:bench</code> → <code>docs/PERFORMANS.md</code></td></tr>
+        <tr><td>Sayfalama (200'lük dilimlerle tam gezinme)</td><td class="n">0,1 ms</td><td><code>pnpm run eval:bench</code></td></tr>
+        <tr><td>Bellek (10k ürün, halihazırda yüklü)</td><td class="n">82,7 MB heap / 223,1 MB RSS</td><td><code>pnpm run eval:bench</code></td></tr>
+        <tr><td>Test paketi</td><td class="n">243 test / 35 dosya</td><td><code>pnpm run test</code></td></tr>
+        <tr><td>MCP Inspector (araç/kaynak/çağrı)</td><td class="n">6 / 2 / 105 bulgu</td><td><code>npx @modelcontextprotocol/inspector --cli …</code></td></tr>
+        <tr><td>HTTP güvenlik senaryoları</td><td class="n">10 test (401·403·413·429)</td><td><code>vitest run packages/mcp-server</code></td></tr>
+        <tr><td>Web demosu (çalışan sunucu)</td><td class="n">HTTP 200 · 92 KB · 4 rota</td><td><code>next build</code> + <code>curl</code></td></tr>
+      </tbody>
+    </table>
+    <p class="src">
+      Tüm rakamlar bu makinede 13 Ekim 2026'da koşulan komutlardan alındı (Windows 11, Node 26.7.0,
+      pnpm 12.11.2). Uydurma değer yoktur; eval ve performans tabloları ilgili komutlarla yeniden
+      üretilebilir.
+    </p>
+
+    <h2>Bu projede yakalanan gerçek tuzaklar (ADR'lere yazıldı)</h2>
+    <ul>
+      <li><strong>TypeScript 7 bu zincirde çalışmıyor:</strong> <code>typescript-eslint</code> peer aralığı <code>&lt;6.1.0</code> → TS 5.9.3'e sabitlendi (ölçümle).</li>
+      <li><strong>pnpm 11+ <code>onlyBuiltDependencies</code>'i okumuyor:</strong> install'ı <code>ERR_PNPM_IGNORED_BUILDS</code> ile düşürüyordu → <code>allowBuilds</code> haritası.</li>
+      <li><strong>MCP Inspector <code>node --import tsx …</code> ile çalışmıyor:</strong> JSON-RPC girişini Node'a script sanıyor → sunucu artık esbuild ile <em>tek dosya</em> derleniyor (<code>--bundle</code> şart).</li>
+      <li><strong>SDK sonuç tipi elle yazılamaz:</strong> <code>CallToolResult | InputRequiredResult</code> birleşimi bozuluyor → SDK'nın kendi tipi kullanılıyor.</li>
+      <li><strong>Kural çakışması sessizce precision'ı düşürüyordu:</strong> SKU tekrarı varken kanal karşılaştırması yanlış pozitif üretiyordu → "her sorunun tek sahibi kural var" ilkesi (ADR-010) ve eval kapısı.</li>
+    </ul>
+
+    <h2>Senden bekleyen iki aksiyon</h2>
+    <div class="box warn">
+      <strong>1) Vercel deploy:</strong> bu makinede Vercel CLI girişli değil. Hazır olduğunda
+      <code>vercel login</code> yapmanız gerekiyor; ardından <code>apps/web</code>'i yayına alıp canlı
+      demo linkini README'ye ekleyeceğim.<br />
+      <strong>2) GitHub push:</strong> yerel <code>gh</code> token'ında <code>workflow</code> kapsamı yok —
+      <code>.github/workflows/</code> içeren push reddedilir. Gereken:
+      <code>gh auth refresh -s workflow</code>.
+    </div>
+
+    <h2>Sırada</h2>
+    <ul>
+      <li><strong>Faz 4 kapanışı:</strong> Vercel deploy + canlı demo linki (kalan tek adım).</li>
+      <li><strong>Faz 5:</strong> LLM öneri katmanı — <code>suggest_fix</code> aracı, şema doğrulama, önbellek/maliyet sınırı, prompt injection sınırlaması; anahtar olmadan "devre dışı" yolu ve mock ile testler.</li>
+      <li><strong>Faz 6:</strong> README son hâli (canlı demo + ekran kaydı + mimari diyagram + eval tablosu), GitHub yayını, CI yeşil doğrulaması, v0.1.0 release.</li>
+    </ul>
+
+    <footer>
+      Kaynak belgeler: <code>docs/DECISIONS.md</code> (ADR-001…015) · <code>docs/EVAL.md</code> ·
+      <code>docs/PERFORMANS.md</code> · <code>docs/MCP.md</code>. Doğrulama:
+      <code>pnpm gates</code> (lint + format + typecheck + test) ve <code>pnpm run eval:check</code>.
+      Denetim kuralları örnek/yapılandırılabilirdir; üretimde kullanmadan önce resmî pazaryeri
+      dokümanından doğrulanmalıdır.
+    </footer>
+  </body>
+</html>
