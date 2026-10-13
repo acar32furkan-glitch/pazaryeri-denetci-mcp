@@ -29,3 +29,8 @@ Thumbs.db
 # Günlükler
 *.log
 npm-debug.log*
+
+# İç durum raporları repoda tutulmaz (yerel yol ve süreç notları içerir).
+# Yerel kopya: kullanici profilindeki raporlar klasoru (depo disi).
+docs/DURUM-RAPORU.html
+docs/ic-*.html
