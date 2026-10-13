@@ -64,7 +64,12 @@ function constantTimeEquals(left: string, right: string): boolean {
   return timingSafeEqual(a, b);
 }
 
-function sendJson(response: ServerResponse, status: number, payload: unknown, headers: Record<string, string> = {}): void {
+function sendJson(
+  response: ServerResponse,
+  status: number,
+  payload: unknown,
+  headers: Record<string, string> = {},
+): void {
   const body = `${JSON.stringify(payload)}\n`;
   response.writeHead(status, {
     'content-type': 'application/json; charset=utf-8',
@@ -116,7 +121,12 @@ export function createHttpServer(options: HttpServerOptions): RunningHttpServer 
       buckets.set(key, { count: 1, resetAt: now + rateLimit.windowMs });
     } else if (bucket.count >= rateLimit.maxRequests) {
       log(`hız sınırı aşıldı: ${key}`);
-      sendJson(response, 429, { error: 'Çok fazla istek; lütfen bekleyin.' }, { 'retry-after': '60' });
+      sendJson(
+        response,
+        429,
+        { error: 'Çok fazla istek; lütfen bekleyin.' },
+        { 'retry-after': '60' },
+      );
       return;
     } else {
       bucket.count += 1;

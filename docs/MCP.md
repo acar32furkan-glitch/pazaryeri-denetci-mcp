@@ -26,27 +26,27 @@ pnpm run mcp:http                     # geliştirme (tsx)
 node packages/mcp-server/dist/http-bin.js   # üretim (derlenmiş)
 ```
 
-| Değişken | Varsayılan | Açıklama |
-| --- | --- | --- |
-| `MCP_HTTP_TOKEN` | — (**zorunlu**) | `Authorization: Bearer <token>` ile eşleşmesi gereken sır |
-| `MCP_HTTP_PORT` | `8787` | Dinlenecek port |
-| `MCP_HTTP_HOST` | `127.0.0.1` | Dinlenecek arayüz (dışarı açarken değiştirin) |
-| `ALLOWED_HOSTS` | `localhost,127.0.0.1,::1` | Kabul edilen `Host` başlıkları (DNS rebinding koruması) |
-| `ALLOWED_ORIGINS` | — | Tarayıcı istekleri için CORS izin listesi |
+| Değişken          | Varsayılan                | Açıklama                                                  |
+| ----------------- | ------------------------- | --------------------------------------------------------- |
+| `MCP_HTTP_TOKEN`  | — (**zorunlu**)           | `Authorization: Bearer <token>` ile eşleşmesi gereken sır |
+| `MCP_HTTP_PORT`   | `8787`                    | Dinlenecek port                                           |
+| `MCP_HTTP_HOST`   | `127.0.0.1`               | Dinlenecek arayüz (dışarı açarken değiştirin)             |
+| `ALLOWED_HOSTS`   | `localhost,127.0.0.1,::1` | Kabul edilen `Host` başlıkları (DNS rebinding koruması)   |
+| `ALLOWED_ORIGINS` | —                         | Tarayıcı istekleri için CORS izin listesi                 |
 
 Uç noktalar: `POST/GET/DELETE /mcp` (MCP protokolü) ve `GET /healthz` (kimlik doğrulaması istemeyen
 canlılık kontrolü).
 
 ### Güvenlik katmanları (hepsi sunucu tarafında)
 
-| Katman | Davranış |
-| --- | --- |
-| Bearer token | Yoksa/yanlışsa `401` + `WWW-Authenticate: Bearer` |
-| Zamanlama güvenli karşılaştırma | Token `timingSafeEqual` ile karşılaştırılır |
-| Host doğrulama | İzin listesinde olmayan `Host` → `403` |
-| Origin doğrulama + CORS | İzinsiz `Origin` → `403`; izinli origin için sınırlı `Access-Control-Allow-*` |
-| Gövde sınırı | `256 KB` üzeri (hem `Content-Length` hem akan sayaç) → `413` |
-| Hız sınırı | İstemci başına 120 istek/dakika → `429` + `Retry-After` |
+| Katman                          | Davranış                                                                      |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| Bearer token                    | Yoksa/yanlışsa `401` + `WWW-Authenticate: Bearer`                             |
+| Zamanlama güvenli karşılaştırma | Token `timingSafeEqual` ile karşılaştırılır                                   |
+| Host doğrulama                  | İzin listesinde olmayan `Host` → `403`                                        |
+| Origin doğrulama + CORS         | İzinsiz `Origin` → `403`; izinli origin için sınırlı `Access-Control-Allow-*` |
+| Gövde sınırı                    | `256 KB` üzeri (hem `Content-Length` hem akan sayaç) → `413`                  |
+| Hız sınırı                      | İstemci başına 120 istek/dakika → `429` + `Retry-After`                       |
 
 ### Doğrulanmış davranış (bu depoda çalıştırıldı)
 
