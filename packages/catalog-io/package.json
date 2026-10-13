@@ -1,6 +1,6 @@
 {
   "name": "@pazaryeri-denetci/catalog-io",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Katalog içe/dışa aktarma: CSV (BOM, Windows-1254, TR sayı biçimi) ve deterministik JSON",

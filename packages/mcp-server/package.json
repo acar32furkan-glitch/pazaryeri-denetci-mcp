@@ -1,6 +1,6 @@
 {
   "name": "@pazaryeri-denetci/mcp-server",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "MCP sunucusu: salt-okunur araçlar, kaynaklar ve prompt şablonları (SDK v2)",

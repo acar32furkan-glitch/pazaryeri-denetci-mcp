@@ -1,6 +1,6 @@
 {
   "name": "@pazaryeri-denetci/eval",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Değerlendirme harness'ı: enjekte edilen hatalar üzerinden kural bazlı precision/recall",

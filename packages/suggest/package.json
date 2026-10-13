@@ -1,6 +1,6 @@
 {
   "name": "@pazaryeri-denetci/suggest",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "LLM öneri katmanı: Türkçe düzeltme önerisi (öneri-only, önbellek, kota, şema doğrulama, prompt injection sınırlama)",

@@ -1,6 +1,6 @@
 {
   "name": "pazaryeri-denetci-mcp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Pazaryeri katalog denetim motoru ve salt-okunur MCP sunucusu (deterministik kurallar + ölçülmüş eval)",
   "license": "MIT",

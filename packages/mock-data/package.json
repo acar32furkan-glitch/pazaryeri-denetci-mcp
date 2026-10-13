@@ -1,6 +1,6 @@
 {
   "name": "@pazaryeri-denetci/mock-data",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Sentetik katalog üreticisi ve etiketli hata enjeksiyonu (eval için gerçek doğruluk verisi)",

@@ -1,6 +1,6 @@
 {
   "name": "@pazaryeri-denetci/web",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Next.js demo: sentetik kataloğu denetler ve önem sıralı raporu gösterir",
