@@ -199,11 +199,29 @@ importers:
 
   packages/core: {}
 
-  packages/eval: {}
+  packages/eval:
+    dependencies:
+      '@pazaryeri-denetci/core':
+        specifier: workspace:*
+        version: link:../core
+      '@pazaryeri-denetci/mock-data':
+        specifier: workspace:*
+        version: link:../mock-data
 
-  packages/mcp-server: {}
+  packages/mcp-server:
+    dependencies:
+      '@pazaryeri-denetci/core':
+        specifier: workspace:*
+        version: link:../core
+      '@pazaryeri-denetci/mock-data':
+        specifier: workspace:*
+        version: link:../mock-data
 
-  packages/mock-data: {}
+  packages/mock-data:
+    dependencies:
+      '@pazaryeri-denetci/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 

@@ -12,5 +12,9 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@pazaryeri-denetci/core": "workspace:*",
+    "@pazaryeri-denetci/mock-data": "workspace:*"
   }
 }
