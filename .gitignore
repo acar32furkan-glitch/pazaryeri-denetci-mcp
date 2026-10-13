@@ -30,7 +30,12 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Vercel CLI yerel bağlantı klasörü (proje kimliği; makineye özel)
+.vercel/
+
 # İç durum raporları repoda tutulmaz (yerel yol ve süreç notları içerir).
 # Yerel kopya: kullanici profilindeki raporlar klasoru (depo disi).
 docs/DURUM-RAPORU.html
 docs/ic-*.html
+
+.vercel
