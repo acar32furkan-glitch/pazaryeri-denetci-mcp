@@ -38,3 +38,5 @@ jobs:
         run: pnpm run test
       - name: Eval (kural bazlı precision/recall eşiği + rapor güncel mi)
         run: pnpm run eval:check
+      - name: Web demosu derlemesi (Next.js)
+        run: pnpm --filter @pazaryeri-denetci/web run build
