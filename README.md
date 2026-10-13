@@ -3,30 +3,32 @@
 **Pazaryeri ürün kataloğunu deterministik kurallarla denetleyen, bulguları önem sırasına göre
 raporlayan ve bunu bir MCP sunucusu üzerinden AI ajanlarına açan açık kaynak araç.**
 
+[![canlı demo](https://img.shields.io/badge/canl%C4%B1%20demo-vercel-black)](https://pazaryeri-denetci-demo.vercel.app)
 [![CI](https://github.com/acar32furkan-glitch/pazaryeri-denetci-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/acar32furkan-glitch/pazaryeri-denetci-mcp/actions/workflows/ci.yml)
 ![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-v0.1.0-informational)
 ![lisans](https://img.shields.io/badge/lisans-MIT-blue)
 ![node](https://img.shields.io/badge/node-%3E%3D20-informational)
 ![testler](https://img.shields.io/badge/testler-286%20ye%C5%9Fil-brightgreen)
 
+Canlı demo: **[pazaryeri-denetci-demo.vercel.app](https://pazaryeri-denetci-demo.vercel.app)** ·
 Depo: **[github.com/acar32furkan-glitch/pazaryeri-denetci-mcp](https://github.com/acar32furkan-glitch/pazaryeri-denetci-mcp)**
 · sürüm: **[v0.1.0 release](https://github.com/acar32furkan-glitch/pazaryeri-denetci-mcp/releases/tag/v0.1.0)**
 · CI: GitHub Actions'ta yeşil (lint · format · typecheck · derleme · 286 test · eval kapısı · web derlemesi)
 
-> **Durum: Faz 0–5 tamam.** 17 denetim kuralı, CSV içe aktarma, **7 araçlı** MCP sunucusu (stdio +
+> **Durum: v0.1.0 yayında.** 17 denetim kuralı, CSV içe aktarma, **7 araçlı** MCP sunucusu (stdio +
 > Streamable HTTP), Next.js demosu ve LLM öneri katmanı çalışıyor; ölçülmüş sonuçlar aşağıda.
-> Kalan tek adım **yayın**: canlı demo (Vercel) ve GitHub push — ikisi de hesap girişi bekliyor.
+> Depo GitHub'da public, CI yeşil, canlı demo Vercel'de.
 
 Bu depodaki tüm katalog verisi **sentetiktir**; gerçek bir markanın ürün, fiyat veya stok verisi
 içermez (bkz. `docs/DECISIONS.md`, ADR-003).
 
 ## Canlı demo
 
-> 🚧 **Yayın bekliyor.** Next.js demosu çalışır ve testlidir (`next build` ile 4 rota), ancak Vercel
-> yayını bu makinede oturum açılmadığı için yapılmadı. Yayın sonrası canlı bağlantı buraya eklenir —
-> uydurma bir bağlantı **konmaz**.
+**▶ https://pazaryeri-denetci-demo.vercel.app** — Vercel'de yayında ve doğrulandı: ana sayfa
+HTTP 200, `/api/denetim` gerçek JSON döner (40 ürün / 40 bulgu), geçersiz profil `400`, `/api/rapor`
+Türkçe Markdown olarak indirilir.
 
-Demoyu yerelde üç komutla çalıştırabilirsiniz:
+Demoyu yerelde çalıştırmak için (üç komut):
 
 ```bash
 pnpm install

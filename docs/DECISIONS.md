@@ -266,6 +266,28 @@ platformda LF; kural tek yerde ve depoyla birlikte taşınıyor.
 atlıyor (`describe.skipIf`). README'deki hızlı başlangıç bu yüzden derlemeyi kapılardan **önce** alır;
 aksi halde "286 test" iddiası yerine 283 geçer + 3 atlanır.
 
+## ADR-018 — Vercel dağıtımı: kök dizin değil, uygulama dizini
+
+**Sorun (ölçüldü):** `apps/web` içinden `vercel --prod` yalnızca o klasörü yükledi (187 KB) ve Vercel
+`npm install` denedi → `workspace:*` bağımlılıkları (core, mock-data, catalog-io) çözülemediği için
+build düştü. Kök dizine `vercel.json` koyup oradan derlemek de "No Next.js version detected" verdi
+(kök `package.json`'da `next` yok; framework kökte algılanamıyor).
+
+**Karar:** Proje depo köküne bağlı, **Root Directory = `apps/web`**, `framework: nextjs`, install
+`pnpm install --frozen-lockfile`, build `pnpm --filter @pazaryeri-denetci/web run build`. Böylece Vercel
+tüm monorepo'yu çeker, pnpm workspaces olarak kurar ve yalnızca uygulamayı derler. GitHub deposu
+projeye bağlı: her push üretime otomatik dağıtılır (CI'ın kendi işiyle çakışmaz — CI testleri koşar,
+Vercel yalnızca yayınlar).
+
+**Tuzak:** Output Directory, kök dizinde yapılan başarısız denemeden `apps/web/.next` kalmıştı;
+Root Directory `apps/web` iken beklenen değer `.next` olduğu için build **başarılı olmasına rağmen**
+dağıtım "output directory not found: /vercel/path0/apps/web/apps/web/.next" ile düştü. Kök dizini
+değiştiren herkesin Output Directory'yi de sıfırlaması gerekir.
+
+**Doğrulama (yayında):** <https://pazaryeri-denetci-demo.vercel.app> → ana sayfa HTTP 200 (91.536
+bayt), `/api/denetim?profil=kucuk` gerçek JSON (40 ürün / 40 bulgu), geçersiz profil `400`,
+`/api/rapor?profil=orta` `text/markdown` + `Content-Disposition`.
+
 ## Varsayımlar (soru sorulmadan alınan kararlar)
 
 1. Arayüz ve rapor metinleri **Türkçe**; kod, teknik tanımlayıcılar ve README İngilizce bölümüyle
