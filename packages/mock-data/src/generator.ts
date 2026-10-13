@@ -1,4 +1,4 @@
-import { computeGtinCheckDigit, plainText, slugifyTr } from '@pazaryeri-denetci/core';
+import { computeGtinCheckDigit, lowerTr, plainText, slugifyTr } from '@pazaryeri-denetci/core';
 
 import { DEFECT_KINDS, EXPECTED_RULE_ID_BY_KIND, DEFECT_LABELS_TR } from './defects.ts';
 import type { DefectKind, InjectedDefect } from './defects.ts';
@@ -44,7 +44,7 @@ const DEFAULT_CHANNELS: readonly Channel[] = ['trendyol', 'hepsiburada', 'mercha
 const DEFAULT_DEFECTS_PER_KIND = 10;
 const IMAGES_MIN = 3;
 const IMAGES_MAX = 5;
-const VARIANTS_MIN = 1;
+const VARIANTS_MIN = 2;
 const VARIANTS_MAX = 3;
 const PRICE_MIN_CENTS = 14990;
 const PRICE_MAX_CENTS = 249990;
@@ -112,17 +112,22 @@ function createCleanProduct(
   }));
 
   const variantCount = rng.int(VARIANTS_MIN, VARIANTS_MAX);
+  const baseColorIndex = COLORS.indexOf(color);
   const variants: Variant[] = Array.from({ length: variantCount }, (_, variantIndex) => {
     const cents = rng.int(PRICE_MIN_CENTS, PRICE_MAX_CENTS);
     const price = priceFromCents(cents);
+    // Seçenekler varyant başına DEĞİŞİR ve kanonik sözlükten gelir: aksi hâlde aynı ürünün
+    // varyantları aynı kombinasyonda olur ve VARIANT_OPTION_INCONSISTENT haklı olarak bağırır.
+    const variantColor = COLORS[(baseColorIndex + variantIndex) % COLORS.length] ?? color;
+    const variantSize = SIZES[variantIndex % SIZES.length] ?? size;
     return {
       sku: `SNT-${pad(index + 1, 4)}-${pad(variantIndex + 1, 2)}`,
       barcode: buildBarcode(rng),
       price,
       compareAtPrice: rng.bool(0.4) ? priceFromCents(Math.round(cents * 1.25)) : null,
       options: [
-        { name: 'Renk', value: color },
-        { name: 'Beden', value: size },
+        { name: 'Renk', value: variantColor },
+        { name: 'Beden', value: variantSize },
       ],
       inventoryQuantity: rng.int(0, 120),
     };
@@ -173,8 +178,39 @@ function createCleanProduct(
   return { product, listings };
 }
 
+/** Bir hatayı uygularken gereken ürün-dışı bağlam (temiz ürünler, sıra bilgisi, kanal satırları). */
+interface DefectContext {
+  /** Hiç hata enjekte edilmemiş ürünler — SKU kopyalamak için güvenli kaynak havuzu. */
+  readonly cleanProducts: readonly Product[];
+  readonly indexByProduct: ReadonlyMap<string, number>;
+  readonly listings: readonly ChannelListing[];
+}
+
+/** UTF-8 metnin Latin-1 varsayımıyla okunmasından doğan tipik bozulmalar. */
+const MOJIBAKE_REPLACEMENTS: readonly (readonly [string, string])[] = [
+  ['ü', 'Ã¼'],
+  ['ö', 'Ã¶'],
+  ['ç', 'Ã§'],
+  ['ı', 'Ä±'],
+  ['ş', 'ÅŸ'],
+  ['ğ', 'ÄŸ'],
+];
+
+function toMojibake(value: string): string {
+  let result = value;
+  for (const [correct, broken] of MOJIBAKE_REPLACEMENTS) {
+    result = result.split(correct).join(broken);
+  }
+  return result;
+}
+
 /** Tek bir hatayı ürüne uygular ve etiketini döner. */
-function applyDefect(product: Product, kind: DefectKind, rng: Rng): InjectedDefect {
+function applyDefect(
+  product: Product,
+  kind: DefectKind,
+  rng: Rng,
+  context: DefectContext,
+): InjectedDefect {
   const base = {
     kind,
     expectedRuleId: EXPECTED_RULE_ID_BY_KIND[kind],
@@ -194,8 +230,10 @@ function applyDefect(product: Product, kind: DefectKind, rng: Rng): InjectedDefe
       };
     }
     case 'TITLE_TOO_LONG': {
+      // Uzun ama kelime tekrarı olmayan kuyruk: yalnızca TITLE_LENGTH tetiklensin
+      // (kelime sayısı 12'yi, tekrar 3'ü aşmasın).
       product.title =
-        `${product.title} ${'Detaylı Ürün Açıklaması ve Sezon Bilgisi '.repeat(4)}`.trim();
+        `${product.title} Koleksiyon Mevsimlik Kaliteli Detaylı Bakımlı Harmoni`.trim();
       return {
         ...base,
         variantSku: null,
@@ -260,6 +298,194 @@ function applyDefect(product: Product, kind: DefectKind, rng: Rng): InjectedDefe
         detail: `${label}: ${original} → ${variant.barcode}`,
       };
     }
+    case 'TITLE_REPEATED_WORDS': {
+      product.title = `${product.title} kazak kazak kazak`.trim();
+      return {
+        ...base,
+        variantSku: null,
+        field: 'title',
+        detail: `${label}: "kazak" 3 kez eklendi`,
+      };
+    }
+    case 'DESC_SHORT': {
+      product.descriptionHtml = '<p>Kısa açıklama.</p>';
+      return {
+        ...base,
+        variantSku: null,
+        field: 'descriptionHtml',
+        detail: `${label}: açıklama ${String(plainText(product.descriptionHtml).length)} karaktere indirildi`,
+      };
+    }
+    case 'DESC_SCRIPT': {
+      product.descriptionHtml = `${product.descriptionHtml}<script>alert('deneme')</script>`;
+      return {
+        ...base,
+        variantSku: null,
+        field: 'descriptionHtml',
+        detail: `${label}: <script> eklendi`,
+      };
+    }
+    case 'IMAGE_COUNT_LOW': {
+      product.images = product.images.slice(0, 1);
+      return {
+        ...base,
+        variantSku: null,
+        field: 'images',
+        detail: `${label}: görsel sayısı 1'e indirildi`,
+      };
+    }
+    case 'VARIANT_OPTION_CASE_MISMATCH': {
+      const first = product.variants[0];
+      const second = product.variants[1];
+      const firstOption = first?.options[0];
+      const secondOption = second?.options[0];
+      if (firstOption === undefined || secondOption === undefined) {
+        throw new Error('VARIANT_OPTION_CASE_MISMATCH: iki varyant ve bir seçenek gerekir.');
+      }
+      secondOption.value = lowerTr(firstOption.value);
+      return {
+        ...base,
+        variantSku: null,
+        field: 'variants[1].options[0].value',
+        detail: `${label}: "${firstOption.value}" → "${secondOption.value}"`,
+      };
+    }
+    case 'VARIANT_PRICE_NULL': {
+      const variant = product.variants[0];
+      if (variant === undefined) throw new Error('VARIANT_PRICE_NULL: varyant bulunamadı.');
+      const previous = variant.price;
+      variant.price = null;
+      // Fiyat yoksa karşılaştırma fiyatı da anlamsızdır: iki kural birden bağırmasın
+      // (hatanın tek sahibi VARIANT_MISSING_PRICE_OR_STOCK).
+      variant.compareAtPrice = null;
+      return {
+        ...base,
+        variantSku: variant.sku,
+        field: 'variants[0].price',
+        detail: `${label}: ${String(previous)} → (boş)`,
+      };
+    }
+    case 'SKU_DUPLICATE_IN_PRODUCT': {
+      const first = product.variants[0];
+      const second = product.variants[1];
+      if (first?.sku === undefined || first.sku === null || second === undefined) {
+        throw new Error('SKU_DUPLICATE_IN_PRODUCT: iki varyant ve dolu SKU gerekir.');
+      }
+      second.sku = first.sku;
+      return {
+        ...base,
+        variantSku: first.sku,
+        field: 'variants[1].sku',
+        detail: `${label}: 2. varyanta "${first.sku}" yazıldı`,
+      };
+    }
+    case 'SKU_DUPLICATE_ACROSS_PRODUCTS': {
+      const target = product.variants[0];
+      if (target === undefined)
+        throw new Error('SKU_DUPLICATE_ACROSS_PRODUCTS: varyant bulunamadı.');
+      const targetPosition = context.indexByProduct.get(product.id) ?? 0;
+      const sources = context.cleanProducts.filter(
+        (candidate) => (context.indexByProduct.get(candidate.id) ?? 0) < targetPosition,
+      );
+      const source = sources.length > 0 ? rng.pick(sources) : null;
+      const sourceSku = source?.variants[0]?.sku ?? null;
+      if (sourceSku === null || sourceSku === '') {
+        // Kaynak bulunamazsa ürün içi tekrara düşülür: etiket yine aynı kuralı gösterir ve
+        // bulgu yine bu üründe çıkar (eval eşleşmesi bozulmaz).
+        const second = product.variants[1];
+        if (target.sku === null || second === undefined) {
+          throw new Error('SKU_DUPLICATE_ACROSS_PRODUCTS: kaynak SKU da yedek yol da yok.');
+        }
+        second.sku = target.sku;
+        return {
+          ...base,
+          variantSku: target.sku,
+          field: 'variants[1].sku',
+          detail: `${label}: kaynak ürün yok, ürün içi tekrara düşüldü`,
+        };
+      }
+      target.sku = sourceSku;
+      return {
+        ...base,
+        variantSku: sourceSku,
+        field: 'variants[0].sku',
+        detail: `${label}: "${sourceSku}" başka bir üründen kopyalandı`,
+      };
+    }
+    case 'COMPARE_AT_BELOW_PRICE': {
+      const variant = product.variants[0];
+      if (variant?.price === null || variant?.price === undefined) {
+        throw new Error('COMPARE_AT_BELOW_PRICE: önce fiyat gerekir.');
+      }
+      const below = Number((variant.price * 0.8).toFixed(2));
+      variant.compareAtPrice = below;
+      return {
+        ...base,
+        variantSku: variant.sku,
+        field: 'variants[0].compareAtPrice',
+        detail: `${label}: ${String(below)} < ${String(variant.price)}`,
+      };
+    }
+    case 'METAFIELD_REMOVED': {
+      product.metafields = product.metafields.filter((metafield) => metafield.key !== 'renk');
+      return {
+        ...base,
+        variantSku: null,
+        field: 'metafields[sentetik]',
+        detail: `${label}: "renk" kaldırıldı`,
+      };
+    }
+    case 'METAFIELD_INVALID_VALUE': {
+      const metafield = product.metafields.find((candidate) => candidate.key === 'yas_grubu');
+      if (metafield === undefined)
+        throw new Error('METAFIELD_INVALID_VALUE: yas_grubu bulunamadı.');
+      metafield.value = 'Bilinmeyen yaş aralığı';
+      return {
+        ...base,
+        variantSku: null,
+        field: 'metafields[sentetik]',
+        detail: `${label}: yas_grubu = "${metafield.value}"`,
+      };
+    }
+    case 'LISTING_PRICE_MISMATCH': {
+      const variant = product.variants[0];
+      if (variant?.sku === undefined || variant.sku === null) {
+        throw new Error('LISTING_PRICE_MISMATCH: SKU gerekir.');
+      }
+      const rows = context.listings.filter(
+        (listing) => (listing.sku?.trim() ?? '') === variant.sku && listing.price !== null,
+      );
+      if (rows.length === 0) throw new Error('LISTING_PRICE_MISMATCH: kanal satırı bulunamadı.');
+      const row = rng.pick(rows);
+      const previous = row.price;
+      row.price = Number(((row.price ?? 0) + 10).toFixed(2));
+      return {
+        ...base,
+        variantSku: variant.sku,
+        field: 'listings',
+        detail: `${label}: ${row.channel} ${String(previous)} → ${String(row.price)}`,
+      };
+    }
+    case 'TR_MOJIBAKE': {
+      product.descriptionHtml = toMojibake(product.descriptionHtml);
+      return {
+        ...base,
+        variantSku: null,
+        field: 'descriptionHtml',
+        detail: `${label}: açıklama Latin-1 varsayımıyla bozuldu`,
+      };
+    }
+    case 'TR_LOCALE_CASING': {
+      product.title = `${product.title} İNDİRİMLİ`;
+      // Varsayılan toLowerCase() 'İ' harfini "i̇" (i + U+0307) yapar; bozuk slug böyle üretilir.
+      product.handle = product.title.toLowerCase().replace(/\s+/gu, '-');
+      return {
+        ...base,
+        variantSku: null,
+        field: 'handle',
+        detail: `${label}: slug varsayılan yerelde üretildi (U+0307)`,
+      };
+    }
   }
 }
 
@@ -305,6 +531,10 @@ export function generateCatalog(options: CatalogOptions): GeneratedCatalog {
 
   // Hata yerleşimi: ürün sırası seed'li olarak karıştırılır, ilk `totalDefects` ürüne birer hata yazılır.
   const order = rng.shuffle(products.map((_, index) => index));
+  const indexByProduct = new Map(products.map((product, position) => [product.id, position]));
+  const defectPositions = new Set(order.slice(0, totalDefects));
+  const cleanProducts = products.filter((_, position) => !defectPositions.has(position));
+  const context: DefectContext = { cleanProducts, indexByProduct, listings };
   let cursor = 0;
   for (const kind of kinds) {
     for (let count = 0; count < perKind; count += 1) {
@@ -313,7 +543,7 @@ export function generateCatalog(options: CatalogOptions): GeneratedCatalog {
       if (target === undefined) throw new Error('generateCatalog: hata yerleşimi taşdı.');
       const product = products[target];
       if (product === undefined) throw new Error('generateCatalog: ürün bulunamadı.');
-      defects.push(applyDefect(product, kind, rng));
+      defects.push(applyDefect(product, kind, rng, context));
       byKind[kind] += 1;
     }
   }
