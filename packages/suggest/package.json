@@ -1,0 +1,20 @@
+{
+  "name": "@pazaryeri-denetci/suggest",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "LLM öneri katmanı: Türkçe düzeltme önerisi (öneri-only, önbellek, kota, şema doğrulama, prompt injection sınırlama)",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
+    "zod": "^4.6.7"
+  }
+}
