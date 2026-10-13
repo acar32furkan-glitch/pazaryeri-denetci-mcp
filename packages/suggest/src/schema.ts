@@ -34,11 +34,16 @@ export const LlmSuggestionSchema = z
       value.descriptionHtml !== undefined ||
       value.seoTitle !== undefined ||
       value.seoDescription !== undefined,
-    { message: 'En az bir öneri alanı (title/descriptionHtml/seoTitle/seoDescription) dolu olmalı' },
+    {
+      message: 'En az bir öneri alanı (title/descriptionHtml/seoTitle/seoDescription) dolu olmalı',
+    },
   )
   .refine(
     (value) => value.descriptionHtml === undefined || !UNSAFE_HTML.test(value.descriptionHtml),
-    { message: 'Önerilen açıklama güvensiz HTML içeriyor (script/iframe/javascript:/olay işleyicisi)' },
+    {
+      message:
+        'Önerilen açıklama güvensiz HTML içeriyor (script/iframe/javascript:/olay işleyicisi)',
+    },
   );
 
 export type LlmSuggestion = z.infer<typeof LlmSuggestionSchema>;

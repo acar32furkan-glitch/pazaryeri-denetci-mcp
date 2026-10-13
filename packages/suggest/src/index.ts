@@ -1,8 +1,6 @@
 export const PACKAGE_NAME = '@pazaryeri-denetci/suggest';
 
-export {
-  ALL_SUGGEST_TARGETS,
-} from './types.ts';
+export { ALL_SUGGEST_TARGETS } from './types.ts';
 export type {
   LlmClient,
   LlmCompletionInput,
@@ -34,12 +32,7 @@ export {
 } from './prompt.ts';
 export type { BuiltPrompt } from './prompt.ts';
 
-export {
-  extractJsonObject,
-  LLM_MAX,
-  LlmSuggestionSchema,
-  parseSuggestion,
-} from './schema.ts';
+export { extractJsonObject, LLM_MAX, LlmSuggestionSchema, parseSuggestion } from './schema.ts';
 export type { LlmSuggestion, ParseResult } from './schema.ts';
 
 export {

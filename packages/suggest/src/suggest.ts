@@ -67,7 +67,11 @@ function emptyStats(): {
 }
 
 /** Önbellek anahtarı: model + istenen alanlar + veri gövdesi. Zaman içermez (kararlı olmalı). */
-export function suggestionCacheKey(dataJson: string, targets: readonly string[], client: LlmClient): string {
+export function suggestionCacheKey(
+  dataJson: string,
+  targets: readonly string[],
+  client: LlmClient,
+): string {
   const hash = createHash('sha256');
   hash.update(`${client.kind}:${client.model ?? ''}\u0000${targets.join(',')}\u0000${dataJson}`);
   return hash.digest('hex');
@@ -78,7 +82,8 @@ export function createSuggester(options: SuggesterOptions): Suggester {
   const dailyTokenBudget = options.dailyTokenBudget ?? DEFAULT_DAILY_TOKEN_BUDGET;
   const cacheLimit = options.cacheLimit ?? DEFAULT_CACHE_LIMIT;
   const now = options.now ?? (() => new Date());
-  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const sleep =
+    options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
 
   const cache = new Map<string, Suggestion>();
   let counters = emptyStats();
@@ -105,11 +110,18 @@ export function createSuggester(options: SuggesterOptions): Suggester {
     client: LlmClient,
     system: string,
     user: string,
-  ): Promise<{ readonly ok: true; readonly text: string; readonly usage: LlmUsage } | { readonly ok: false; readonly message: string }> {
+  ): Promise<
+    | { readonly ok: true; readonly text: string; readonly usage: LlmUsage }
+    | { readonly ok: false; readonly message: string }
+  > {
     let lastMessage = 'bilinmeyen LLM hatası';
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       try {
-        const result = await client.complete({ system, user, maxOutputTokens: maxTokensPerRequest });
+        const result = await client.complete({
+          system,
+          user,
+          maxOutputTokens: maxTokensPerRequest,
+        });
         if (result.ok) return result;
         lastMessage = result.message;
       } catch (error: unknown) {
@@ -187,7 +199,9 @@ export function createSuggester(options: SuggesterOptions): Suggester {
       if (value.seoTitle !== undefined) fields.seoTitle = value.seoTitle;
       if (value.seoDescription !== undefined) fields.seoDescription = value.seoDescription;
 
-      const addressedRuleIds = [...new Set(request.findings.map((finding) => finding.ruleId))].sort();
+      const addressedRuleIds = [
+        ...new Set(request.findings.map((finding) => finding.ruleId)),
+      ].sort();
       const suggestion: Suggestion = {
         productId: request.product.id,
         model: client.model ?? 'bilinmeyen',

@@ -85,7 +85,10 @@ export function createAnthropicClient(options: AnthropicClientOptions): LlmClien
           },
         };
       } catch (error: unknown) {
-        return { ok: false, message: error instanceof Error ? error.message : 'bilinmeyen LLM hatası' };
+        return {
+          ok: false,
+          message: error instanceof Error ? error.message : 'bilinmeyen LLM hatası',
+        };
       }
     },
   };
