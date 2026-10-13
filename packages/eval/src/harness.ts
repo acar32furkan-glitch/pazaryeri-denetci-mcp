@@ -16,10 +16,10 @@ export interface EvalConfig {
   readonly defectsPerKind: number;
 }
 
-/** Varsayılan koşu: 500 ürün, tür başına 20 hata (7 tür → 140 etiketli hata). */
+/** Varsayılan koşu: 1000 ürün, tür başına 20 hata (21 tür → 420 etiketli hata). */
 export const DEFAULT_EVAL_CONFIG: EvalConfig = {
   seed: 20261013,
-  productCount: 500,
+  productCount: 1000,
   defectsPerKind: 20,
 };
 
