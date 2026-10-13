@@ -52,6 +52,25 @@ Bu %100 **sentetik veri üzerinde** ölçülmüştür: etiketler ile kurallar ay
 yüzden beklenen sonuçtur — gerçek dünya kataloglarındaki doğruluk oranı iddiası **değildir**
 (bkz. Sınırlılıklar).
 
+### LLM öneri kalite kontrolü (harness doğrulaması — mock istemci)
+
+Öneri hattının uçtan uca çalışması da eval kapsamındadır: 140 ürün için öneri istenir, önerilen metin
+ilgili **deterministik kurallarla yeniden** değerlendirilir.
+
+| Alan            | Beklenen | Üretilen | Kuralı geçen | Oran       |
+| --------------- | -------- | -------- | ------------ | ---------- |
+| title           | 60       | 60       | 60           | %100,0     |
+| descriptionHtml | 60       | 60       | 60           | %100,0     |
+| seoTitle        | 20       | 20       | 20           | %100,0     |
+| seoDescription  | 20       | 20       | 20           | %100,0     |
+| **Genel**       | **160**  | **160**  | **160**      | **%100,0** |
+
+Eşik `minSuggestPassRate = 1`: oran düşerse `pnpm run eval:check` (ve CI) kırılır.
+
+> **Bu rakamlar model kalitesini ölçmez.** Koşu **sahte (mock) istemci** ile yapılır — ortamda API
+> anahtarı olmadığı için **canlı model ölçümü yapılmadı** ve bu README'de açıkça yazılır. Ölçülen şey
+> hattın doğru kurulmasıdır: şema doğrulaması, önbellek ve önerinin kurallara göre yeniden denetimi.
+
 ### Büyük katalog (10.000 ürün)
 
 `pnpm run eval:bench` ile ölçüldü: denetim **1358,7 ms** (7360 ürün/sn), üretim 365,4 ms,
@@ -73,14 +92,15 @@ pnpm run build                            # dist/bin.js (tek dosya, bağımlıl�
 node packages/mcp-server/dist/bin.js      # stdio üzerinden MCP sunucusu
 ```
 
-| Araç               | Görev                                              |
-| ------------------ | -------------------------------------------------- |
-| `list_products`    | Kataloğu sayfalayarak listeler/arar                |
-| `get_product`      | Tek ürünün tam kaydı                               |
-| `audit_product`    | Tek ürünü denetler (önerilerle)                    |
-| `audit_catalog`    | Tüm kataloğu denetler, en kritik N bulguyu getirir |
-| `compare_channels` | SKU bazlı fiyat/stok tutarlılığı                   |
-| `export_report`    | Türkçe Markdown veya JSON rapor                    |
+| Araç               | Görev                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
+| `list_products`    | Kataloğu sayfalayarak listeler/arar                                                                      |
+| `get_product`      | Tek ürünün tam kaydı                                                                                     |
+| `audit_product`    | Tek ürünü denetler (önerilerle)                                                                          |
+| `audit_catalog`    | Tüm kataloğu denetler, en kritik N bulguyu getirir                                                       |
+| `compare_channels` | SKU bazlı fiyat/stok tutarlılığı                                                                         |
+| `export_report`    | Türkçe Markdown veya JSON rapor                                                                          |
+| `suggest_fix`      | Başlık/açıklama/SEO için Türkçe düzeltme **önerisi** (yazmaz, uygulamaz; anahtar yoksa "devre dışı" der) |
 
 Artı 2 kaynak (`catalog://rules`, `catalog://summary`) ve 2 prompt şablonu
 (`katalog-saglik-denetimi`, `tek-urun-iyilestirme`). Tüm araçlar **salt-okunur**; hata durumunda
@@ -95,6 +115,21 @@ MCP_HTTP_TOKEN=gizli-token pnpm run mcp:http   # POST /mcp · GET /healthz
 
 İstemci yapılandırması, ortam değişkenleri, güvenlik katmanları ve MCP Inspector doğrulaması:
 **[docs/MCP.md](docs/MCP.md)**
+
+### LLM öneri katmanı (opsiyonel)
+
+`suggest_fix` aracı; başlık, açıklama ve SEO metinleri için **Türkçe düzeltme önerisi** üretir. Denetim
+**LLM'e bağımlı değildir**: öneri katmanı kapalıyken de tüm bulgular üretilir.
+
+```bash
+MCP_LLM_MODE=mock pnpm run mcp          # sahte demo istemcisi (ağa çıkmaz, maliyet yok)
+MCP_LLM_MODE=off  pnpm run mcp          # kapalı: suggest_fix "devre dışı" der
+ANTHROPIC_API_KEY=… LLM_MODEL=… pnpm run mcp   # gerçek (model adı ortamdan okunur)
+```
+
+Öneri-only tasarım, prompt injection savunması (zarf/veri ayrımı, sınır işareti etkisizleştirme, şema
+doğrulaması), önbellek/kota ve dürüst sınırlılıklar: **[docs/LLM.md](docs/LLM.md)** · karar kaydı:
+ADR-016 (`docs/DECISIONS.md`).
 
 ## Geliştirme
 

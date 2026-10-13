@@ -1,7 +1,11 @@
 # MCP Sunucusu
 
 `pazaryeri-denetci-mcp`, denetim çekirdeğini **Model Context Protocol** üzerinden AI ajanlarına açar.
-Tüm araçlar **salt-okunurdur**: hiçbiri dış sisteme yazmaz, hiçbiri veri değiştirmez.
+Tüm araçlar **salt-okunurdur**: hiçbiri dış sisteme yazmaz, hiçbiri veri değiştirmez. `suggest_fix`
+de bir istisna değildir: yalnızca düzeltme **önerisi** döner, hiçbir alanı değiştirmez. Öneri katmanı
+üç modda çalışır (`MCP_LLM_MODE`): `auto` (ortama bak), `mock` (sahte demo istemcisi, ağa çıkmaz) ve
+`off` (kapalı). Anahtar yoksa araç `devre-disi` döner ve sunucu çalışmaya devam eder —
+ayrıntı: **[docs/LLM.md](LLM.md)**.
 
 ## Hızlı başlangıç
 
@@ -111,14 +115,15 @@ Kendi katalogunuzu (sentetik olmalı) okutmak için `CATALOG_PATH` verin:
 
 ## Araçlar
 
-| Araç               | Ne zaman kullanılır                          | Girdi                                                                |
-| ------------------ | -------------------------------------------- | -------------------------------------------------------------------- |
-| `list_products`    | Kataloğu gezmek/aramak (sayfalı)             | `offset`, `limit` (≤200), `status`, `productType`, `vendor`, `query` |
-| `get_product`      | Tek ürünün tam kaydı                         | `id` veya `handle`                                                   |
-| `audit_product`    | Bir ürünü düzeltmeye başlamadan önce         | `id`/`handle`, `ruleIds?`                                            |
-| `audit_catalog`    | "Kataloğu denetle, en kritik N sorunu getir" | `topN` (≤100), `ruleIds?`, `severity?`, `offset?`                    |
-| `compare_channels` | SKU bazlı fiyat/stok tutarlılığı             | `sku?`, `limit?`                                                     |
-| `export_report`    | Kullanıcıya rapor sunmak                     | `format` (`json`\|`markdown`), `maxFindings?`                        |
+| Araç               | Ne zaman kullanılır                            | Girdi                                                                |
+| ------------------ | ---------------------------------------------- | -------------------------------------------------------------------- |
+| `list_products`    | Kataloğu gezmek/aramak (sayfalı)               | `offset`, `limit` (≤200), `status`, `productType`, `vendor`, `query` |
+| `get_product`      | Tek ürünün tam kaydı                           | `id` veya `handle`                                                   |
+| `audit_product`    | Bir ürünü düzeltmeye başlamadan önce           | `id`/`handle`, `ruleIds?`                                            |
+| `audit_catalog`    | "Kataloğu denetle, en kritik N sorunu getir"   | `topN` (≤100), `ruleIds?`, `severity?`, `offset?`                    |
+| `compare_channels` | SKU bazlı fiyat/stok tutarlılığı               | `sku?`, `limit?`                                                     |
+| `export_report`    | Kullanıcıya rapor sunmak                       | `format` (`json`\|`markdown`), `maxFindings?`                        |
+| `suggest_fix`      | Metin için **öneri** almak (yazmaz, uygulamaz) | `id`\|`handle`, `targets?`, `topFindings?` (≤20)                     |
 
 Tüm araçlar tek bir JSON nesnesini metin bloğu olarak döner (makine tarafından okunabilir). Hatalar
 `isError: true` ile **yapılandırılmış** döner; sunucu çökmez ve hata sonrası çağrılar çalışmaya devam
