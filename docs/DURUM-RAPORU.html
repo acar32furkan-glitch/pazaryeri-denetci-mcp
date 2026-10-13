@@ -500,15 +500,15 @@
       anahtarı gerekmez.
     </div>
 
-    <h2>Yayın adımları (senin iki komutundan sonra bende)</h2>
+    <h2>Yayın adımları — durum</h2>
     <ul>
-      <li><code>git remote add origin …</code> + ilk push (CI yeşil mi doğrulanır).</li>
+      <li>✅ Depo oluşturuldu, 55 commit push edildi (<code>gh repo create … --push</code>).</li>
       <li>
-        GitHub Actions'ın gerçekten yeşil olduğu ilk koşuyla teyit edilir (CI: lint + format +
-        typecheck + derleme + 286 test + eval kapısı + web derlemesi).
+        ✅ GitHub Actions yeşil: lint · format · typecheck · derleme · 286 test · eval kapısı · web
+        derlemesi (run 38435945370, 47 sn).
       </li>
-      <li><code>v0.1.0</code> etiketi + GitHub release notları (CHANGELOG'dan).</li>
-      <li>Vercel deploy → canlı demo bağlantısı README'ye ve bu rapora eklenir.</li>
+      <li>✅ <code>v0.1.0</code> etiketi ve GitHub release (notlar CHANGELOG'dan).</li>
+      <li>⏳ Vercel deploy → canlı demo bağlantısı README'ye ve bu rapora eklenecek.</li>
       <li>
         Ekran kaydı: senaryo hazır (<code>docs/DEMO.md</code>) — kaydı alıp README'ye eklemek kalır.
       </li>
