@@ -14,6 +14,65 @@ node packages/mcp-server/dist/bin.js   # stdio üzerinden MCP sunucusu
 Varsayılan veri kaynağı **sentetik katalogdur** (gerçek kimlik bilgisi gerekmez). Katalog `stderr`'e
 yazılan tek satırla bildirilir; `stdout` yalnızca protokol içindir.
 
+## Canlı uç nokta: Streamable HTTP
+
+stdio yerel kullanım içindir; uzak bir ajan/istemci için HTTP taşıması vardır. **Kimlik doğrulama
+zorunludur:** `MCP_HTTP_TOKEN` tanımlı değilse sunucu başlamaz (sessizce açık uç nokta bırakmaz).
+
+```bash
+MCP_HTTP_TOKEN=$(openssl rand -hex 24) \
+ALLOWED_ORIGINS=https://demo.example \
+pnpm run mcp:http                     # geliştirme (tsx)
+node packages/mcp-server/dist/http-bin.js   # üretim (derlenmiş)
+```
+
+| Değişken | Varsayılan | Açıklama |
+| --- | --- | --- |
+| `MCP_HTTP_TOKEN` | — (**zorunlu**) | `Authorization: Bearer <token>` ile eşleşmesi gereken sır |
+| `MCP_HTTP_PORT` | `8787` | Dinlenecek port |
+| `MCP_HTTP_HOST` | `127.0.0.1` | Dinlenecek arayüz (dışarı açarken değiştirin) |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1,::1` | Kabul edilen `Host` başlıkları (DNS rebinding koruması) |
+| `ALLOWED_ORIGINS` | — | Tarayıcı istekleri için CORS izin listesi |
+
+Uç noktalar: `POST/GET/DELETE /mcp` (MCP protokolü) ve `GET /healthz` (kimlik doğrulaması istemeyen
+canlılık kontrolü).
+
+### Güvenlik katmanları (hepsi sunucu tarafında)
+
+| Katman | Davranış |
+| --- | --- |
+| Bearer token | Yoksa/yanlışsa `401` + `WWW-Authenticate: Bearer` |
+| Zamanlama güvenli karşılaştırma | Token `timingSafeEqual` ile karşılaştırılır |
+| Host doğrulama | İzin listesinde olmayan `Host` → `403` |
+| Origin doğrulama + CORS | İzinsiz `Origin` → `403`; izinli origin için sınırlı `Access-Control-Allow-*` |
+| Gövde sınırı | `256 KB` üzeri (hem `Content-Length` hem akan sayaç) → `413` |
+| Hız sınırı | İstemci başına 120 istek/dakika → `429` + `Retry-After` |
+
+### Doğrulanmış davranış (bu depoda çalıştırıldı)
+
+```bash
+curl -s http://127.0.0.1:8899/healthz
+# {"status":"ok","service":"pazaryeri-denetci-mcp"}
+
+curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8899/mcp \
+  -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+# 401
+
+curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8899/mcp \
+  -H 'Host: kotu.example' -H 'authorization: Bearer <token>' \
+  -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+# 403
+```
+
+Geçerli token ile `initialize` çağrısı `event: message` + JSON-RPC yanıtı döner (Streamable HTTP akışı).
+Bu davranışlar otomatik olarak da testlidir: `packages/mcp-server/test/http-integration.test.ts`
+(10 senaryo: 401, yanlış token, healthz, Host, Origin, OPTIONS, 413, 429, araç çağrısı).
+
+> **Sunucusuz (serverless) dağıtım notu:** Yukarıdaki sunucu kalıcı bir Node sürecidir
+> (VPS/Render/Fly). Vercel gibi sunucusuz ortamlarda aynı araçlar `createMcpHandler` +
+> web-standard `Request`/`Response` kullanan bir Next.js route'u olarak açılmalıdır; bu, bu fazın
+> kapsamı dışındadır ve `docs/DECISIONS.md` içinde "ertelenenler" arasındadır.
+
 ## Bir istemciye bağlama (Claude Desktop örneği)
 
 `claude_desktop_config.json`:

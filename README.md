@@ -86,7 +86,15 @@ Artı 2 kaynak (`catalog://rules`, `catalog://summary`) ve 2 prompt şablonu
 (`katalog-saglik-denetimi`, `tek-urun-iyilestirme`). Tüm araçlar **salt-okunur**; hata durumunda
 yapılandırılmış hata döner ve sunucu çökmez.
 
-İstemci yapılandırması, ortam değişkenleri ve MCP Inspector doğrulaması: **[docs/MCP.md](docs/MCP.md)**
+Uzak kullanım için **Streamable HTTP** uç noktası vardır (Bearer token zorunlu, Host/Origin
+doğrulaması, hız ve gövde sınırı):
+
+```bash
+MCP_HTTP_TOKEN=gizli-token pnpm run mcp:http   # POST /mcp · GET /healthz
+```
+
+İstemci yapılandırması, ortam değişkenleri, güvenlik katmanları ve MCP Inspector doğrulaması:
+**[docs/MCP.md](docs/MCP.md)**
 
 ## Geliştirme
 

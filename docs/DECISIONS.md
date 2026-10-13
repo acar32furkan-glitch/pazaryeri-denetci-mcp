@@ -182,6 +182,26 @@ veriliyordu). Düz `node dist/bin.js` ile Inspector sorunsuz bağlanıyor (doğr
 **Ölçüldü:** `--bundle` bayrağı olmadan esbuild yalnızca dönüştürme yapar ve göreli içe aktarmalar
 (`./config.ts`) çalışma zamanında `ERR_MODULE_NOT_FOUND` verir; paketleme şarttır.
 
+## ADR-015 — HTTP taşımasında güvenlik: token zorunlu, savunma katmanlı
+
+**Karar:** Streamable HTTP uç noktası (`/mcp`) yalnızca `MCP_HTTP_TOKEN` tanımlıysa başlar; token
+yoksa süreç **başlatılmaz**. Üstüne sırayla: zamanlama güvenli token karşılaştırması, Host izin
+listesi (DNS rebinding), Origin izin listesi + sınırlı CORS, gövde boyutu sınırı (256 KB; hem
+`Content-Length` hem akan sayaç) ve istemci başına hız sınırı (120 istek/dk). Kimlik doğrulaması
+istemeyen tek uç `/healthz`'dir ve hiçbir hassas veri döndürmez.
+
+**Neden "varsayılan kapalı" değil "token yoksa başlamaz":** Varsayılan olarak dinleyen ama kimlik
+doğrulaması yapmayan bir uç nokta, fark edilmeden açık kalır. Yapılandırma hatasını **başlangıçta ve
+gürültülü** biçimde durdurmak, çalışma zamanında sessiz bir güvenlik açığından iyidir.
+
+**Neden hız sınırı ve gövde sınırı:** stdio taşımasında istemci tek süreçtir; HTTP'de değildir. Tek
+bir istemci sunucuyu doldurabilir (bellek/CPU). Sınırlar sabit ve belgelenmiştir; üretimde ters
+proxy arkasında da uygulanmalıdır (ör. nginx `client_max_body_size`).
+
+**Sunucusuz ortam:** Bu sunucu kalıcı süreç varsayar. Vercel gibi ortamlarda araçlar
+`createMcpHandler` + web-standard `Request`/`Response` ile bir Next.js route'unda açılmalıdır —
+bilinçli olarak ertelendi (bkz. "Sapmalar").
+
 ## Varsayımlar (soru sorulmadan alınan kararlar)
 
 1. Arayüz ve rapor metinleri **Türkçe**; kod, teknik tanımlayıcılar ve README İngilizce bölümüyle
@@ -198,8 +218,11 @@ veriliyordu). Düz `node dist/bin.js` ile Inspector sorunsuz bağlanıyor (doğr
 
 ## Sapmalar / ertelenenler (kayıt altında)
 
-1. **`apps/web` Faz 4'te workspace'e girer.** Faz 0–3'te Next.js bağımlılıkları kurulmaz (indirme
-   boyutu ve disk); klasör yer tutucu README ile durur. Disk durumu: C: sürücüsünde ~54 GB boş.
+1. **`apps/web` Faz 4'te workspace'e alındı** (`pnpm-workspace.yaml → apps/*`). Faz 0–3'te Next.js
+   bağımlılıkları kurulmadı (indirme boyutu/disk); kurulum artık yapıldı.
+2. **MCP'nin sunucusuz (serverless) HTTP karşılığı ertelendi.** Kalıcı süreç HTTP sunucusu vardır ve
+   testlidir; Vercel gibi ortamlar için `createMcpHandler` + web-standard `Request`/`Response` tabanlı
+   bir Next.js route'u gerekiyor. Bu, portföyde "bilinçli kapsam sınırı" olarak belgelenmiştir.
 2. **CI'nin yeşil koşusu ilk push'ta doğrulanır.** Yerel kapılar (`pnpm gates`) tam çalışır; ancak
    yerel `gh` token'ının kapsamları `gist, read:org, repo` — **`workflow` kapsamı yok**, yani
    `.github/workflows/` içeren bir push GitHub tarafından reddedilir. İlk yayın öncesi
