@@ -3,17 +3,41 @@
 **Pazaryeri ürün kataloğunu deterministik kurallarla denetleyen, bulguları önem sırasına göre
 raporlayan ve bunu bir MCP sunucusu üzerinden AI ajanlarına açan açık kaynak araç.**
 
-![durum](https://img.shields.io/badge/durum-geli%C5%9Ftirme%20s%C3%BCr%C3%BCyor-orange)
+![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-v0.1.0-informational)
 ![lisans](https://img.shields.io/badge/lisans-MIT-blue)
 ![node](https://img.shields.io/badge/node-%3E%3D20-informational)
+![testler](https://img.shields.io/badge/testler-286%20ye%C5%9Fil-brightgreen)
 
-> 🚧 **Durum: Faz 3 tamamlandı** — 17 denetim kuralı, CSV içe aktarma, MCP sunucusu (stdio) ve eval
-> harness'ı çalışıyor (ölçülmüş sonuçlar aşağıda). Bu README Faz 6'da tamamlanır: canlı demo
-> linki, 60–90
-> saniyelik ekran kaydı, mimari diyagramı ve **ölçülmüş** eval tablosu o bölümde yer alacak.
+> **Durum: Faz 0–5 tamam.** 17 denetim kuralı, CSV içe aktarma, **7 araçlı** MCP sunucusu (stdio +
+> Streamable HTTP), Next.js demosu ve LLM öneri katmanı çalışıyor; ölçülmüş sonuçlar aşağıda.
+> Kalan tek adım **yayın**: canlı demo (Vercel) ve GitHub push — ikisi de hesap girişi bekliyor.
 
 Bu depodaki tüm katalog verisi **sentetiktir**; gerçek bir markanın ürün, fiyat veya stok verisi
 içermez (bkz. `docs/DECISIONS.md`, ADR-003).
+
+## Canlı demo
+
+> 🚧 **Yayın bekliyor.** Next.js demosu çalışır ve testlidir (`next build` ile 4 rota), ancak Vercel
+> yayını bu makinede oturum açılmadığı için yapılmadı. Yayın sonrası canlı bağlantı buraya eklenir —
+> uydurma bir bağlantı **konmaz**.
+
+Demoyu yerelde üç komutla çalıştırabilirsiniz:
+
+```bash
+pnpm install
+pnpm --filter @pazaryeri-denetci/web run build
+pnpm --filter @pazaryeri-denetci/web exec next start -p 3220   # http://127.0.0.1:3220
+```
+
+Demo üç sentetik katalog profilinden birini seçip denetimi çalıştırır; özet kartlarını, en sık 5
+kuralı ve en kritik 20 bulguyu gösterir. Sonuç JSON (`/api/denetim`) ve Türkçe Markdown raporu
+(`/api/rapor`) olarak indirilebilir.
+
+## 60–90 saniyelik demo
+
+Ekran kaydı senaryosu (sahne sahne: komutlar, ekranda görünecekler, anlatım metni):
+**[docs/DEMO.md](docs/DEMO.md)**. Kayıt henüz alınmadı; senaryodaki her komut bu depoda çalışır
+durumdadır.
 
 ## Ne yapar
 
@@ -27,17 +51,34 @@ Denetim kuralları deterministiktir (test ve eval güvenilir olsun diye); LLM ya
 
 ## Yol haritası
 
-| Faz | İçerik                                         | Durum       |
-| --- | ---------------------------------------------- | ----------- |
-| 0   | Monorepo iskeleti, kapılar, CI, DECISIONS.md   | ✅ tamam    |
-| 1   | Sentetik katalog üretici + çekirdek + 6 kural  | ✅ tamam    |
-| 2   | Kalan kurallar, rapor, CSV, uç durumlar        | ✅ tamam    |
-| 3   | MCP sunucusu (stdio) + entegrasyon testleri    | ✅ tamam    |
-| 4   | Web demo + Streamable HTTP + güvenlik + deploy | ⬜ bekliyor |
-| 5   | LLM öneri katmanı (mock ile doğrulanır)        | ⬜ bekliyor |
-| 6   | Eval harness, doküman, yayın                   | ⬜ bekliyor |
+| Faz | İçerik                                        | Durum                            |
+| --- | --------------------------------------------- | -------------------------------- |
+| 0   | Monorepo iskeleti, kapılar, CI, DECISIONS.md  | ✅ tamam                         |
+| 1   | Sentetik katalog üretici + çekirdek + 6 kural | ✅ tamam                         |
+| 2   | Kalan kurallar, rapor, CSV, uç durumlar       | ✅ tamam                         |
+| 3   | MCP sunucusu (stdio) + entegrasyon testleri   | ✅ tamam                         |
+| 4   | Web demo + Streamable HTTP + güvenlik         | ✅ tamam (deploy bekliyor)       |
+| 5   | LLM öneri katmanı (mock ile doğrulandı)       | ✅ tamam                         |
+| 6   | Eval/docs son hâli, yayın, v0.1.0             | 🔄 sürüyor (yayın onay bekliyor) |
 
-## Ölçülmüş sonuçlar (Faz 1)
+## Mimari
+
+```mermaid
+flowchart LR
+  MD["mock-data<br/>sentetik üretici · etiketli hata enjeksiyonu"] --> CORE
+  IO["catalog-io<br/>CSV / JSON · Windows-1254 · TR sayı"] --> CORE
+  CORE["core<br/>17 kural · katalog indeksi · rapor"] --> MCP["mcp-server<br/>7 araç · stdio + Streamable HTTP"]
+  CORE --> WEB["apps/web<br/>Next.js demo"]
+  SUG["suggest<br/>LLM öneri · önbellek · kota"] --> MCP
+  EVAL["eval<br/>harness · benchmark · öneri kalite"] --> CORE
+  EVAL --> MD
+  EVAL --> SUG
+```
+
+Ayrıntılı diyagramlar (denetim akışı ve LLM hattı için sıra diyagramları):
+**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+
+## Ölçülmüş sonuçlar
 
 Sentetik üretici hata enjekte ederken her hatayı etiketler; eval harness'ı etiketleri bulgularla
 `(kural, ürün, varyant SKU)` anahtarı üzerinden eşleştirip kural bazlı precision/recall üretir.
@@ -92,6 +133,19 @@ pnpm run build                            # dist/bin.js (tek dosya, bağımlıl�
 node packages/mcp-server/dist/bin.js      # stdio üzerinden MCP sunucusu
 ```
 
+Claude Desktop benzeri bir istemciye bağlamak için (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "pazaryeri-denetci": {
+      "command": "node",
+      "args": ["<depo-yolu>/packages/mcp-server/dist/bin.js"]
+    }
+  }
+}
+```
+
 | Araç               | Görev                                                                                                    |
 | ------------------ | -------------------------------------------------------------------------------------------------------- |
 | `list_products`    | Kataloğu sayfalayarak listeler/arar                                                                      |
@@ -140,6 +194,34 @@ pnpm run build   # MCP sunucusunun çalıştırılabilir girdisi
 pnpm run eval    # docs/EVAL.md dosyasını gerçek koşuyla yeniden üretir
 ```
 
+## Teknik kararlar (özet)
+
+| Karar                                                 | Neden                                                                                    |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Kurallar deterministik, LLM yalnızca **öneri** üretir | Aynı girdi + aynı kural = aynı bulgu; test ve eval ancak böyle güvenilir olur (ADR-001)  |
+| MCP sunucusu (stdio + HTTP)                           | Ajan araçları doğrudan çağırır; yazma yok, yan etki yok (ADR-006/015)                    |
+| `mock-first` ve tamamen sentetik veri                 | Gerçek marka verisi olmadan uçtan uca doğrulanabilir demo (ADR-003)                      |
+| Kurallar **yapılandırılabilir örnek set**             | Pazaryeri zorunlu alanları değişir; sabit "gerçek kural" yazmak yanıltıcı olur (ADR-004) |
+| `catalog-io` ayrı paket                               | CSV kodlama/sayı biçimi uç durumları çekirdeği kirletmesin (ADR-011)                     |
+| Her sorunun **tek sahibi kural** vardır               | Çift raporlama precision'ı sessizce düşürür (ADR-010)                                    |
+| Öneri katmanı `core`'a bağımlı değil                  | Katman saf ve ağsız kalır, tek başına test edilebilir (ADR-016)                          |
+| Eval + eşikler CI kapısı                              | Kural ya da mock bozulduğunda regresyon sessizce geçmesin (Faz 1/5)                      |
+
+Tam liste ve "neler denenip bırakıldı": **[docs/DECISIONS.md](docs/DECISIONS.md)** (ADR-001…016).
+
+## Depo yapısı
+
+| Dizin                 | İçerik                                                                 |
+| --------------------- | ---------------------------------------------------------------------- |
+| `packages/core`       | Tipler, 17 kural, katalog indeksi, XSS temizleme, rapor üretimi        |
+| `packages/mock-data`  | Tohumlu sentetik üretici + **etiketli** hata enjeksiyonu               |
+| `packages/catalog-io` | CSV/JSON içe-dışa aktarma (BOM, Windows-1254, `1.299,90` biçimi)       |
+| `packages/eval`       | Eval harness'ı, precision/recall, eşikler, benchmark, öneri kalite     |
+| `packages/suggest`    | LLM öneri katmanı: istemci soyutlaması, şema doğrulama, önbellek, kota |
+| `packages/mcp-server` | MCP araçları/kaynakları/prompt'ları, stdio + Streamable HTTP taşıma    |
+| `apps/web`            | Next.js (App Router) demo: profil seç, denetle, JSON/Markdown indir    |
+| `docs/`               | DECISIONS · ARCHITECTURE · MCP · LLM · EVAL · PERFORMANS · DEMO        |
+
 ## Sınırlılıklar (dürüstçe)
 
 - Denetim kuralları **örnek ve yapılandırılabilir** bir kümedir; pazaryerlerinin resmî zorunlu alan
@@ -147,6 +229,9 @@ pnpm run eval    # docs/EVAL.md dosyasını gerçek koşuyla yeniden üretir
 - Gerçek pazaryeri/Shopify entegrasyonu (kimlik doğrulama, API çağrıları) bu projenin kapsamı
   **dışındadır**; veri yükleme CSV veya sentetik üretici iledir.
 - Yazma niteliğinde hiçbir araç yoktur; tüm araçlar salt-okunur ya da `dryRun`'dır.
+- LLM öneri katmanı için **canlı model ölçümü yapılmadı** (ortamda anahtar yok). Öneri kalite rakamı
+  hattın doğruluğunu ölçer, model kalitesini değil.
+- Canlı demo ve ekran kaydı henüz yayınlanmadı (hesap girişi bekliyor); ikisi de çalışır durumda.
 
 ---
 
@@ -155,10 +240,13 @@ pnpm run eval    # docs/EVAL.md dosyasını gerçek koşuyla yeniden üretir
 **An open-source toolkit that audits marketplace product catalogs with deterministic rules, ranks the
 findings by severity, and exposes all of it to AI agents through an MCP server.**
 
-🚧 Status: phase 0 (skeleton) done — the full README (live demo link, screen recording, architecture
-diagram and a _measured_ eval table) ships in phase 6. All catalog data is **synthetic**; no real
-merchant data is included. Audit rules are a **configurable sample set** and must be verified against
-official marketplace docs before production use. Real marketplace/Shopify integration is explicitly
-out of scope.
+Status: phases 0–5 complete — 17 audit rules, 286 green tests, a 7-tool MCP server over stdio and
+Streamable HTTP, a Next.js demo and an optional LLM suggestion layer. Publishing is the remaining
+step: the Vercel deploy and the GitHub push both need account login, so **no live demo link is claimed
+here**. Measured numbers: rule precision/recall 100 % on 1000 synthetic products (420 labelled
+defects); the suggestion pipeline passes its harness check 160/160 with a **mock** client — no live
+model was measured. All catalog data is **synthetic**; audit rules are a **configurable sample set**
+and must be verified against official marketplace docs before production use. Real
+marketplace/Shopify integration is explicitly out of scope.
 
 MIT licensed.
