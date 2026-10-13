@@ -24,6 +24,8 @@
     "eval:check": "tsx packages/eval/src/cli.ts --check",
     "eval:bench": "tsx packages/eval/src/bench.ts",
     "audit:csv": "tsx packages/catalog-io/src/audit-csv-cli.ts",
+    "mcp:stdio": "tsx packages/mcp-server/src/bin.ts",
+    "mcp:http": "tsx packages/mcp-server/src/http-bin.ts",
     "gates": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test"
   },
   "devDependencies": {

@@ -12,13 +12,15 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "esbuild src/bin.ts src/index.ts --bundle --format=esm --platform=node --target=node20 --outdir=dist --packages=external --sourcemap",
-    "start": "node dist/bin.js"
+    "build": "esbuild src/bin.ts src/http-bin.ts src/index.ts --bundle --format=esm --platform=node --target=node20 --outdir=dist --packages=external --sourcemap",
+    "start": "node dist/bin.js",
+    "start:http": "node dist/http-bin.js"
   },
   "bin": {
     "pazaryeri-denetci-mcp": "./dist/bin.js"
   },
   "dependencies": {
+    "@modelcontextprotocol/node": "^2.1.1",
     "@modelcontextprotocol/server": "^2.3.1",
     "@pazaryeri-denetci/catalog-io": "workspace:*",
     "@pazaryeri-denetci/core": "workspace:*",
