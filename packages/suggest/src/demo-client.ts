@@ -56,26 +56,56 @@ function words(text: string): string[] {
     .filter((word) => word.length > 0);
 }
 
-/** Başlığı kural sınırlarına getirir: en az 20, en fazla 70 karakter, kelime ortasından kesmez. */
-function fixTitle(title: string, suffix: string): string {
-  const parts = words(title);
-  if (parts.length === 0) return `Sentetik Ürün ${suffix}`.slice(0, TITLE_MAX);
-
-  let out = '';
+/**
+ * Aynı kelimenin tekrarını atar (Türkçe küçük harf kuralıyla karşılaştırır).
+ * Amaç: enjekte edilmiş "anahtar kelime yığma" hatasını öneride de tekrarlamamak.
+ */
+function uniqueWords(parts: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
   for (const part of parts) {
-    const candidate = out === '' ? part : `${out} ${part}`;
-    if (candidate.length > TITLE_MAX) break;
-    out = candidate;
-    if (out.length >= 25) break;
+    const key = part.toLocaleLowerCase('tr');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(part);
   }
-  if (out.length < TITLE_MIN) out = `${out} ${suffix}`.trim();
-  return out.length > TITLE_MAX ? out.slice(0, TITLE_MAX).trim() : out;
+  return out;
+}
+
+/** Başlığı kural sınırlarına getirir: en az 15, en fazla 70 karakter, kelime ortasından kesmez. */
+function fixTitle(title: string, suffix: string): string {
+  const parts = uniqueWords(words(title));
+  let out = '';
+  if (parts.length > 0) {
+    for (const part of parts) {
+      const candidate = out === '' ? part : `${out} ${part}`;
+      if (candidate.length > TITLE_MAX) break;
+      out = candidate;
+      if (out.length >= 25) break;
+    }
+  }
+
+  // Tek kelimelik/kısa başlıklar TITLE_MIN'in altında kalabilir: kategori ve ek kelimelerle tamamla.
+  if (out.length < TITLE_MIN) {
+    for (const filler of [suffix, 'Kadın', 'Giyim', 'Sentetik Ürün']) {
+      if (out.length >= TITLE_MIN) break;
+      out = `${out} ${filler}`.trim();
+    }
+  }
+  if (out === '') out = 'Sentetik Ürün';
+  if (out.length < TITLE_MIN) out = `${out} — Sentetik Demo Ürünü`;
+
+  if (out.length <= TITLE_MAX) return out;
+  const cut = out.slice(0, TITLE_MAX);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > TITLE_MIN ? cut.slice(0, lastSpace) : cut).trim();
 }
 
 /** Açıklamayı kural sınırının (120 karakter düz metin) üstüne çıkarır; yalnızca güvenli etiketler. */
 function fixDescription(payload: DemoPayload): string {
   const type = payload.productType === '' ? 'ürün' : payload.productType;
-  const tagLine = payload.tags.length > 0 ? payload.tags.slice(0, 5).join(', ') : 'sentetik katalog';
+  const tagLine =
+    payload.tags.length > 0 ? payload.tags.slice(0, 5).join(', ') : 'sentetik katalog';
   return [
     `<p><strong>${fixTitle(payload.title, type)}</strong> — ${type} kategorisinde, günlük kullanıma`,
     'uygun sentetik demo ürünü. Bu metin örnek veri üzerinde çalışan denetim aracı için üretilmiştir.</p>',
@@ -117,10 +147,11 @@ export function createDemoMockClient(options: DemoMockOptions = {}): LlmClient {
         suggestion['seoTitle'] = fixTitle(payload.title, suffix).slice(0, 60);
       }
       if (targets.has('seoDescription')) {
-        suggestion['seoDescription'] = `${fixTitle(payload.title, suffix)} — ${suffix} kategorisinde sentetik demo ürünü.`.slice(
-          0,
-          160,
-        );
+        suggestion['seoDescription'] =
+          `${fixTitle(payload.title, suffix)} — ${suffix} kategorisinde sentetik demo ürünü.`.slice(
+            0,
+            160,
+          );
       }
 
       return JSON.stringify({
