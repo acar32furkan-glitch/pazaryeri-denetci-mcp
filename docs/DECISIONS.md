@@ -202,6 +202,47 @@ proxy arkasında da uygulanmalıdır (ör. nginx `client_max_body_size`).
 `createMcpHandler` + web-standard `Request`/`Response` ile bir Next.js route'unda açılmalıdır —
 bilinçli olarak ertelendi (bkz. "Sapmalar").
 
+## ADR-016 — LLM katmanı yalnızca öneri üretir; denetimin tek kaynağı deterministik kurallardır
+
+**Karar:** LLM (`suggest_fix`) ürün metni için Türkçe düzeltme **önerir**; hiçbir alanı yazmaz,
+hiçbir şeyi uygulamaz. Denetim bulgularının tamamı yapılandırılmış kurallardan gelir. Anahtar yoksa
+uygulama çalışmaya devam eder ve araç `devre-disi` döner.
+
+**Neden ayrı `suggest` paketi:** Öneri katmanı `core`'a bağımlı değildir; çağıran ürün ve bulguları
+yapısal olarak eşler. Böylece katman saf, ağsız ve tek başına test edilebilir (aynı girdi → aynı
+çıktı anahtarı, enjekte edilebilir saat/bekleme).
+
+**Neden mock ve devre-dışı yolları gerçek test edilir:** Bu ortamda API anahtarı yok. "Anahtar
+olmadığı için öneri katmanı çalışmadı" demek yerine üç yol da (gerçek/mock/kapalı) kodda ve
+testlerde tutulur; raporda **canlı model ölçümü yapılmadığı açıkça** yazılır (bkz. docs/EVAL.md).
+Uydurma model kalitesi rakamı yayımlanmaz.
+
+**Prompt injection savunması (katmanlı):**
+
+1. **Zarf/veri ayrımı:** görev ve kurallar yalnızca sabit system metnindedir; ürün alanları ve bulgu
+   metinleri ayrı bir veri bloğuna alınır.
+2. **Sınır işareti etkisizleştirme:** veri içindeki `<<<` / `>>>` dizileri tek karaktere indirilir ve
+   görünmez (zero-width) karakterler ayıklanır — model, veri içinde sınır işareti taklit edip
+   "blok bitti" sanısına düşürülemez.
+3. **Uzunluk sınırları:** her alan (1200), her bulgu metni (400) kısaltılır → taşma ve maliyet sınırı.
+4. **Çıktı doğrulaması:** model çıktısı Zod ile doğrulanır; uzunluk tavanları, "en az bir alan dolu
+   olmalı" ve güvensiz HTML yasağı (script/iframe/javascript:/olay işleyicisi) uygulanır. Geçersiz
+   çıktı **sessizce kabul edilmez**, `gecersiz-cikti` olarak raporlanır ve önbelleğe yazılmaz.
+5. **Sonuç:** model ele geçirilse bile çıktı, doğrulanmış ve sınırlı bir öneriden öteye geçemez;
+   sistemde yazma yetkisi olmadığı için zarar yüzeyi yoktur. Bu, test senaryosuna bağlanmıştır.
+
+**Maliyet kontrolü:** istek başına token tavanı (`LLM_MAX_TOKENS_PER_REQUEST`, varsayılan 1024),
+süreç içi önbellek (aynı girdi ikinci kez LLM'e gitmez; diske yazılmaz — "varsayılan salt-okunur"
+ilkesi dosya yazmayı da kapsar) ve günlük token bütçesi (`LLM_DAILY_TOKEN_BUDGET`, varsayılan
+200.000). Bütçe dolduğunda araç `kota` döner; denetim etkilenmez.
+
+**Hata davranışı:** istemci hatası/zaman aşımında **bir kez** yeniden denenir (250 ms bekleme),
+ikinci deneme de başarısızsa `llm-hata` döner ve öneri "alınamadı" işaretlenir. SDK'nın kendi
+yeniden denemesi kapatılmıştır (`maxRetries: 0`) — tekrar deneme tek bir yerde yönetilir.
+
+**Model adı koda gömülmez:** `LLM_MODEL` tanımlı değilse anahtar olsa bile katman **devre dışı**
+döner; eksik yapılandırma sessizce bir varsayılan modele düşmez.
+
 ## Varsayımlar (soru sorulmadan alınan kararlar)
 
 1. Arayüz ve rapor metinleri **Türkçe**; kod, teknik tanımlayıcılar ve README İngilizce bölümüyle
