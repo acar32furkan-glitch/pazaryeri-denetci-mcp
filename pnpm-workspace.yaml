@@ -6,3 +6,8 @@ packages:
 # (eski `onlyBuiltDependencies` pnpm 11'den beri okunmuyor).
 allowBuilds:
   esbuild: true
+
+minimumReleaseAgeExclude:
+  # zod 4.6.7 yeni yayınlandı; pnpm'un "minimum yayın yaşı" karantinasına takılmaması için
+  # bilinçli olarak listeye alındı (MCP SDK v2'nin zod v4 gereksinimi).
+  - zod@4.6.7
