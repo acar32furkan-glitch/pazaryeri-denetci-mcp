@@ -231,6 +231,13 @@ bilinçli olarak ertelendi (bkz. "Sapmalar").
    pnpm global kuruldu (`npm i -g pnpm` → 12.11.2) ve `packageManager` alanı sürümü sabitliyor.
 5. **Kapsam eşiği henüz yok.** Yüzde eşiği, gerçek ölçüm alındıktan sonra (Faz 2/6) konur; uydurma
    eşik konmaz.
+6. **Windows'ta bazı port aralıkları rezerve.** `netsh int ipv4 show excludedportrange protocol=tcp`
+   → `3041–3140` ve `3948–4047` aralıkları bu makinede ayrılmış; `next start -p 3111` bu yüzden
+   `EACCES: permission denied` veriyor. Demo `-p 3220` ile koşuldu. Ayrıca
+   `pnpm … run start -- -p N` biçimi çalışmaz (argüman Next'e bozuk geçiyor:
+   `Invalid project directory … \-p`); doğru biçim `pnpm --filter @pazaryeri-denetci/web exec next start -p N`.
+7. **Demo `?profil=` hatasında 400 değil varsayılana düşer.** Sayfa geçersiz profil değerini sessizce
+   `orta`'ya çevirip uyarı basar; 400 + Türkçe hata **API rotalarında** vardır (orada test edilir).
 
 ## Neler denenip bırakıldı
 
