@@ -146,6 +146,42 @@ kullanır. Ölçüm `pnpm run eval:bench` ile alınır ve `docs/PERFORMANS.md`'y
 **Ölçüm (10.000 ürün, 17 kural):** denetim 1358,7 ms (7360 ürün/sn), üretim 365,4 ms, sayfalama
 0,1 ms, RSS 223,1 MB. Akış tabanlı (streaming) içe aktarma kapsam dışı; `maxRows` ile üst sınır var.
 
+## ADR-013 — MCP yüzeyi: salt-okunur araçlar ve yapılandırılmış hata sözleşmesi
+
+**Karar:** Araçlar (`list_products`, `get_product`, `audit_product`, `audit_catalog`,
+`compare_channels`, `export_report`) yalnızca okur; hiçbiri yazmaz. Sonuçlar tek bir JSON
+nesnesinin **metin bloğu** olarak döndürülür (ajan tarafından okunabilir, insan tarafından
+görülebilir). Beklenen hatalar (`Ürün bulunamadı`, `Bilinmeyen kural kimliği`) `isError: true` ile
+döner; beklenmeyen hatalar `guarded()` sarmalayıcısında yakalanır.
+
+**Neden:** MCP istemcileri araç hatasını protokol hatası olarak görürse oturum düşebilir. Hata
+mesajını **veri** olarak döndürmek, ajanın kullanıcıya düzgün açıklama yapmasını sağlar ve sunucu
+sürecini ayakta tutar. Bu davranış testlidir: hatalı çağrıdan sonraki çağrı yine yanıt verir
+(`stdio-integration.test.ts`).
+
+**Sayfalama:** `list_products` en fazla 200, `audit_catalog` en fazla 100 satır döner; `hasMore`
+alanı istemciye devam edip etmeyeceğini söyler (bağlam penceresini tek araç çağrısıyla doldurmamak
+için).
+
+**Çıktı tipi:** SDK'nın kendi `CallToolResult` tipi kullanılır (elle yazılmış bir arayüz değil);
+böylece SDK sürüm yükseltmelerinde sözleşme kayması derleme zamanında yakalanır.
+
+## ADR-014 — Sunucu **derlenmiş** tek dosyadan çalışır
+
+**Karar:** `packages/mcp-server` esbuild ile paketlenir: `dist/bin.js` (bağımlılıklar
+`--packages=external` ile dışarıda). Kullanıcı istemci yapılandırmasında bu dosyayı gösterir;
+CI derlemeyi testlerden **önce** çalıştırır ve derlenmiş girişe karşı ayrı bir entegrasyon testi
+koşar.
+
+**Neden:** stdio istemcileri sunucuyu kendileri başlatır; `tsx` gibi bir çalıştırıcıya bağımlı olmak
+kurulumu kırılgan yapar. Ayrıca MCP Inspector'ı `node --import tsx ...` biçiminde çağırmak
+**çalışmıyor** — Inspector, Node'a geçirilen bayrakları ayrıştırırken standart girdiyi script sanıp
+şu hatayı veriyor: `SyntaxError: Unexpected token ':'` (JSON-RPC mesajı Node'a script olarak
+veriliyordu). Düz `node dist/bin.js` ile Inspector sorunsuz bağlanıyor (doğrulandı).
+
+**Ölçüldü:** `--bundle` bayrağı olmadan esbuild yalnızca dönüştürme yapar ve göreli içe aktarmalar
+(`./config.ts`) çalışma zamanında `ERR_MODULE_NOT_FOUND` verir; paketleme şarttır.
+
 ## Varsayımlar (soru sorulmadan alınan kararlar)
 
 1. Arayüz ve rapor metinleri **Türkçe**; kod, teknik tanımlayıcılar ve README İngilizce bölümüyle

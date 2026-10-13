@@ -7,8 +7,8 @@ raporlayan ve bunu bir MCP sunucusu üzerinden AI ajanlarına açan açık kayna
 ![lisans](https://img.shields.io/badge/lisans-MIT-blue)
 ![node](https://img.shields.io/badge/node-%3E%3D20-informational)
 
-> 🚧 **Durum: Faz 2 tamamlandı** — 17 denetim kuralı, CSV içe aktarma, Türkçe/JSON rapor üreticileri
-> ve eval harness'ı çalışıyor (ölçülmüş sonuçlar aşağıda). Bu README Faz 6'da tamamlanır: canlı demo
+> 🚧 **Durum: Faz 3 tamamlandı** — 17 denetim kuralı, CSV içe aktarma, MCP sunucusu (stdio) ve eval
+> harness'ı çalışıyor (ölçülmüş sonuçlar aşağıda). Bu README Faz 6'da tamamlanır: canlı demo
 > linki, 60–90
 > saniyelik ekran kaydı, mimari diyagramı ve **ölçülmüş** eval tablosu o bölümde yer alacak.
 
@@ -32,7 +32,7 @@ Denetim kuralları deterministiktir (test ve eval güvenilir olsun diye); LLM ya
 | 0   | Monorepo iskeleti, kapılar, CI, DECISIONS.md   | ✅ tamam    |
 | 1   | Sentetik katalog üretici + çekirdek + 6 kural  | ✅ tamam    |
 | 2   | Kalan kurallar, rapor, CSV, uç durumlar        | ✅ tamam    |
-| 3   | MCP sunucusu (stdio) + entegrasyon testleri    | ⬜ bekliyor |
+| 3   | MCP sunucusu (stdio) + entegrasyon testleri    | ✅ tamam    |
 | 4   | Web demo + Streamable HTTP + güvenlik + deploy | ⬜ bekliyor |
 | 5   | LLM öneri katmanı (mock ile doğrulanır)        | ⬜ bekliyor |
 | 6   | Eval harness, doküman, yayın                   | ⬜ bekliyor |
@@ -64,11 +64,36 @@ pnpm run audit:csv -- examples/ornek-katalog.csv          # Türkçe Markdown ra
 pnpm run audit:csv -- examples/ornek-katalog.csv --json   # özet + satır bazlı içe aktarma uyarıları
 ```
 
+## MCP sunucusu
+
+Denetim çekirdeği bir **MCP sunucusu** olarak açılır; bir AI ajanı araçları doğrudan çağırır:
+
+```bash
+pnpm run build                            # dist/bin.js (tek dosya, bağımlılıklar harici)
+node packages/mcp-server/dist/bin.js      # stdio üzerinden MCP sunucusu
+```
+
+| Araç               | Görev                                              |
+| ------------------ | -------------------------------------------------- |
+| `list_products`    | Kataloğu sayfalayarak listeler/arar                |
+| `get_product`      | Tek ürünün tam kaydı                               |
+| `audit_product`    | Tek ürünü denetler (önerilerle)                    |
+| `audit_catalog`    | Tüm kataloğu denetler, en kritik N bulguyu getirir |
+| `compare_channels` | SKU bazlı fiyat/stok tutarlılığı                   |
+| `export_report`    | Türkçe Markdown veya JSON rapor                    |
+
+Artı 2 kaynak (`catalog://rules`, `catalog://summary`) ve 2 prompt şablonu
+(`katalog-saglik-denetimi`, `tek-urun-iyilestirme`). Tüm araçlar **salt-okunur**; hata durumunda
+yapılandırılmış hata döner ve sunucu çökmez.
+
+İstemci yapılandırması, ortam değişkenleri ve MCP Inspector doğrulaması: **[docs/MCP.md](docs/MCP.md)**
+
 ## Geliştirme
 
 ```bash
 pnpm install
 pnpm gates       # lint + format:check + typecheck + test
+pnpm run build   # MCP sunucusunun çalıştırılabilir girdisi
 pnpm run eval    # docs/EVAL.md dosyasını gerçek koşuyla yeniden üretir
 ```
 

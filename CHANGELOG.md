@@ -18,3 +18,7 @@ Bu proje [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) biçimini ve
   Markdown + deterministik JSON rapor üreticisi, `packages/catalog-io` (CSV: BOM ve Windows-1254
   kodlama, `1.299,90` biçiminde TR sayılar, satır bazlı uyarılar; JSON dışa/içe aktarma) ve
   10.000 ürünlük performans ölçümü (`pnpm run eval:bench`).
+- Faz 3: MCP sunucusu (SDK v2, stdio) — 6 salt-okunur araç, 2 kaynak, 2 prompt şablonu, sayfalama
+  sınırları ve yapılandırılmış hata sözleşmesi; `@modelcontextprotocol/client` ile **ayrı süreçte**
+  çalışan gerçek stdio entegrasyon testleri; esbuild paketlemesiyle tek dosya çalıştırılabilir giriş
+  (`dist/bin.js`); MCP Inspector ile elle doğrulama (`docs/MCP.md`).
