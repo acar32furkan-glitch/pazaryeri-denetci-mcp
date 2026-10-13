@@ -21,6 +21,8 @@
     "coverage": "vitest run --coverage",
     "eval": "tsx packages/eval/src/cli.ts",
     "eval:check": "tsx packages/eval/src/cli.ts --check",
+    "eval:bench": "tsx packages/eval/src/bench.ts",
+    "audit:csv": "tsx packages/catalog-io/src/audit-csv-cli.ts",
     "gates": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test"
   },
   "devDependencies": {
