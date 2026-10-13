@@ -1,10 +1,35 @@
 import { severityRank } from './severity.ts';
-import type { ChannelListing, Finding, Product, RuleDefinition } from './types.ts';
+import type { Channel, ChannelListing, Finding, Product, RuleDefinition } from './types.ts';
 
-/** Kuralın denetlediği bağlam: tek ürün + o ürünün kanal beslemesi satırları. */
+/** Tüm kanallar — kural tanımlarında `appliesTo` için kısayol. */
+export const ALL_CHANNELS: readonly Channel[] = [
+  'shopify',
+  'hepsiburada',
+  'trendyol',
+  'n11',
+  'merchant-center',
+];
+
+/**
+ * Katalog geneli indeks: kuralların ürün-ötesi soruları (ör. "bu SKU başka üründe de var mı")
+ * yanıtlaması için denetim motoru tarafından bir kez kurulur. Kurallar yine saftır.
+ */
+export interface CatalogIndex {
+  /** Normalize edilmiş SKU → o SKU'yu taşıyan ürün kimlikleri (katalog sırasında). */
+  readonly skuOwners: ReadonlyMap<string, readonly string[]>;
+}
+
+export const EMPTY_CATALOG_INDEX: CatalogIndex = { skuOwners: new Map() };
+
+/** Kuralın denetlediği bağlam: tek ürün, kanal satırları ve (varsa) katalog indeksi. */
 export interface RuleContext {
   readonly product: Product;
   readonly listings: readonly ChannelListing[];
+  /**
+   * Katalog indeksi. Tek ürün denetiminde bulunmaz; ürün-ötesi kural (SKU_DUPLICATE) indeks
+   * yoksa sessizce bulgu üretmez — katalog denetiminde daima doldurulur.
+   */
+  readonly index?: CatalogIndex;
 }
 
 /** Tek bir denetim kuralı. `check` saf olmalıdır: yan etki yok, saat/rastgelelik yok. */
