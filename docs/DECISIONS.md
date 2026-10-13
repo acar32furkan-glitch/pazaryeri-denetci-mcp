@@ -223,7 +223,7 @@ bilinçli olarak ertelendi (bkz. "Sapmalar").
 2. **MCP'nin sunucusuz (serverless) HTTP karşılığı ertelendi.** Kalıcı süreç HTTP sunucusu vardır ve
    testlidir; Vercel gibi ortamlar için `createMcpHandler` + web-standard `Request`/`Response` tabanlı
    bir Next.js route'u gerekiyor. Bu, portföyde "bilinçli kapsam sınırı" olarak belgelenmiştir.
-2. **CI'nin yeşil koşusu ilk push'ta doğrulanır.** Yerel kapılar (`pnpm gates`) tam çalışır; ancak
+3. **CI'nin yeşil koşusu ilk push'ta doğrulanır.** Yerel kapılar (`pnpm gates`) tam çalışır; ancak
    yerel `gh` token'ının kapsamları `gist, read:org, repo` — **`workflow` kapsamı yok**, yani
    `.github/workflows/` içeren bir push GitHub tarafından reddedilir. İlk yayın öncesi
    `gh auth refresh -s workflow` gerekiyor.
