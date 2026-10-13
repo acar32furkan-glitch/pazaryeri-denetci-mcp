@@ -1,0 +1,16 @@
+{
+  "name": "@pazaryeri-denetci/mcp-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP sunucusu: salt-okunur araçlar, kaynaklar ve prompt şablonları (SDK v2)",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}
