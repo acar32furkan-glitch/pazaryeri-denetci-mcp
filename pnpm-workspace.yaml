@@ -1,0 +1,8 @@
+# pnpm workspaces — apps/web Faz 4'te buraya eklenir (docs/DECISIONS.md, Sapmalar).
+packages:
+  - packages/*
+
+# pnpm 11+ derleme betiklerini varsayılan olarak bloklar; `allowBuilds` haritası ister
+# (eski `onlyBuiltDependencies` pnpm 11'den beri okunmuyor).
+allowBuilds:
+  esbuild: true

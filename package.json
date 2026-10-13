@@ -1,0 +1,37 @@
+{
+  "name": "pazaryeri-denetci-mcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pazaryeri katalog denetim motoru ve salt-okunur MCP sunucusu (deterministik kurallar + ölçülmüş eval)",
+  "license": "MIT",
+  "author": "Furkan Acar <284462468+acar32furkan-glitch@users.noreply.github.com>",
+  "type": "module",
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "pnpm --recursive --if-present run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "eval": "tsx packages/eval/src/cli.ts",
+    "gates": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "^5.0.3",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

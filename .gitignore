@@ -1,0 +1,31 @@
+# Bağımlılıklar
+node_modules/
+
+# Derleme çıktıları
+dist/
+.next/
+out/
+*.tsbuildinfo
+
+# Test / kapsam
+coverage/
+.vitest/
+
+# Önbellek
+.cache/
+
+# Gizli değerler — .env.example hariç hiçbir .env dosyası depoya girmez
+.env
+.env.*
+!.env.example
+
+# Editör / işletim sistemi
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Günlükler
+*.log
+npm-debug.log*
