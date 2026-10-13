@@ -9,3 +9,6 @@ export { createServerConfig } from './config.ts';
 export type { ConfigEnv, ServerConfig } from './config.ts';
 
 export { createServer, ruleCatalogJson } from './server.ts';
+
+export { createHttpServer, listen } from './http.ts';
+export type { HttpServerOptions, RateLimitOptions, RunningHttpServer } from './http.ts';
