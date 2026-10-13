@@ -243,6 +243,29 @@ yeniden denemesi kapatılmıştır (`maxRetries: 0`) — tekrar deneme tek bir y
 **Model adı koda gömülmez:** `LLM_MODEL` tanımlı değilse anahtar olsa bile katman **devre dışı**
 döner; eksik yapılandırma sessizce bir varsayılan modele düşmez.
 
+## ADR-017 — Satır sonları `.gitattributes` ile LF'e sabitlendi
+
+**Sorun (ölçüldü, temiz klonda):** Windows'ta `git clone`, kullanıcının global `core.autocrlf` ayarı
+yüzünden dosyaları CRLF ile açıyor; prettier `endOfLine: lf` beklediği için `pnpm run format:check`
+**147 dosyada** biçim hatası verip `pnpm gates`'i düşürüyordu. Yerel çalışma kopyasında bu görünmüyordu
+(`core.autocrlf false`), CI de Linux'ta koştuğu için görmüyordu — yani kırılma yalnızca "temiz klonda
+README'yi baştan sona dene" adımıyla ortaya çıktı.
+
+**Karar:** `.gitattributes` → `* text=auto eol=lf` (ikili dosyalar `binary`). Depo ve çalışma ağacı her
+platformda LF; kural tek yerde ve depoyla birlikte taşınıyor.
+
+**Neden `endOfLine: auto` değil:** Karışık satır sonları diff gürültüsü ve platforma bağlı davranış
+üretir; belirsizliği hoş görmek yerine kaynağında sabitlemek tekrar üretilebilirliği korur.
+
+**Doğrulama:** `.gitattributes` eklendikten sonra depo yeniden klonlandı; temiz klonda
+`pnpm install --frozen-lockfile` → `pnpm run build` → `pnpm gates` (286 test) → `pnpm run eval` →
+`pnpm run eval:check` → `pnpm --filter @pazaryeri-denetci/web run start` (HTTP 200, `/api/denetim`)
+→ `node packages/mcp-server/dist/bin.js` (7 araç) adımlarının tamamı geçti.
+
+**İlgili ikinci bulgu:** `packages/mcp-server/test/built-entry.test.ts` derlenmiş girdi yoksa 3 testi
+atlıyor (`describe.skipIf`). README'deki hızlı başlangıç bu yüzden derlemeyi kapılardan **önce** alır;
+aksi halde "286 test" iddiası yerine 283 geçer + 3 atlanır.
+
 ## Varsayımlar (soru sorulmadan alınan kararlar)
 
 1. Arayüz ve rapor metinleri **Türkçe**; kod, teknik tanımlayıcılar ve README İngilizce bölümüyle

@@ -197,10 +197,14 @@ ADR-016 (`docs/DECISIONS.md`).
 
 ```bash
 pnpm install
-pnpm gates       # lint + format:check + typecheck + test
-pnpm run build   # MCP sunucusunun çalıştırılabilir girdisi
+pnpm run build   # MCP sunucusunun derlenmiş girdisi (dist/bin.js) + Next.js demosu
+pnpm gates       # lint + format:check + typecheck + test (build sonrası 286 test)
 pnpm run eval    # docs/EVAL.md dosyasını gerçek koşuyla yeniden üretir
+pnpm run eval:check   # rapor bayat mı + eşikler sağlanıyor mu (CI kapısı)
 ```
+
+Sıra önemlidir: `pnpm run build` çalıştırılmadıysa derlenmiş girdiyi sınayan 3 test atlanır
+(`describe.skipIf`); bu yüzden önce derleme, sonra kapılar koşulur.
 
 ## Teknik kararlar (özet)
 
