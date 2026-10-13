@@ -227,9 +227,9 @@ bilinçli olarak ertelendi (bkz. "Sapmalar").
    yerel `gh` token'ının kapsamları `gist, read:org, repo` — **`workflow` kapsamı yok**, yani
    `.github/workflows/` içeren bir push GitHub tarafından reddedilir. İlk yayın öncesi
    `gh auth refresh -s workflow` gerekiyor.
-3. **corepack bu ortamda kırık** (Node kurulum yolu MSYS ile bozuluyor: `C:\c\Program Files\...`);
+4. **corepack bu ortamda kırık** (Node kurulum yolu MSYS ile bozuluyor: `C:\c\Program Files\...`);
    pnpm global kuruldu (`npm i -g pnpm` → 12.11.2) ve `packageManager` alanı sürümü sabitliyor.
-4. **Kapsam eşiği henüz yok.** Yüzde eşiği, gerçek ölçüm alındıktan sonra (Faz 2/6) konur; uydurma
+5. **Kapsam eşiği henüz yok.** Yüzde eşiği, gerçek ölçüm alındıktan sonra (Faz 2/6) konur; uydurma
    eşik konmaz.
 
 ## Neler denenip bırakıldı
