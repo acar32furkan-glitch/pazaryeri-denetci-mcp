@@ -2,16 +2,77 @@ import { describe, expect, it } from 'vitest';
 
 import { RULE_CATALOG, RULE_ID_LIST, auditProduct, getRule } from '../src/index.ts';
 import type { Product } from '../src/index.ts';
-import { makeProduct, makeVariant } from './factories.ts';
+import { makeListing, makeProduct, makeVariant } from './factories.ts';
 
-/** Kasıtlı olarak her kuralın tetiklendiği bozuk ürün. */
+/** Kasıtlı olarak her kuralın tetiklendiği bozuk ürün (DESC_TOO_SHORT/DESC_UNSAFE_HTML hariç). */
 const brokenProduct: Product = makeProduct({
-  title: 'X',
+  title: 'urun urun urun',
   descriptionHtml: '',
-  seo: { title: null, description: null },
+  seo: { title: null, description: 'Ã¼rÃ¼n aÃ§Ä±klama' },
   images: [{ url: 'https://cdn.test/1.jpg', altText: null }],
-  variants: [makeVariant({ sku: null, barcode: '4006381333932' })],
+  metafields: [
+    { namespace: 'sentetik', key: 'renk', type: 'single_line_text_field', value: 'Gri' },
+  ],
+  variants: [
+    makeVariant({
+      sku: 'DUP-1',
+      barcode: '4006381333932',
+      price: null,
+      compareAtPrice: 10,
+      inventoryQuantity: -5,
+    }),
+    makeVariant({
+      sku: 'DUP-1',
+      barcode: '96385074',
+      price: 100,
+      compareAtPrice: 50,
+      inventoryQuantity: 3,
+      options: [
+        { name: 'Renk', value: 'kırmızı' },
+        { name: 'Beden', value: 'S' },
+      ],
+    }),
+    makeVariant({
+      sku: null,
+      barcode: '',
+      price: 20,
+      compareAtPrice: null,
+      inventoryQuantity: 0,
+      options: [
+        { name: 'Renk', value: 'Kırmızı' },
+        { name: 'Beden', value: 'XS' },
+      ],
+    }),
+    // SKU'su benzersiz bir varyant: kanal uyuşmazlığı yalnızca SKU tek olan varyantlarda aranır
+    // (tekrar eden SKU'da karşılaştırma anlamsızdır, o hatanın sahibi SKU_DUPLICATE'dir).
+    makeVariant({
+      sku: 'SNT-0001-04',
+      barcode: '96385074',
+      price: 150,
+      compareAtPrice: 200,
+      inventoryQuantity: 5,
+      options: [
+        { name: 'Renk', value: 'Gri' },
+        { name: 'Beden', value: 'L' },
+      ],
+    }),
+  ],
 });
+
+/** Aynı üründe DESC_MISSING ile DESC_TOO_SHORT çakıştığı için ikinci örnek gerekir. */
+const shortUnsafeProduct: Product = makeProduct({
+  id: 'snt-prd-0002',
+  descriptionHtml: '<p>Kısa açıklama.</p><script>alert(1)</script>',
+});
+
+function allBrokenFindings(): ReturnType<typeof auditProduct> {
+  return [
+    ...auditProduct(brokenProduct, RULE_CATALOG, [
+      makeListing({ sku: 'SNT-0001-04', price: 999, stock: 5 }),
+    ]),
+    ...auditProduct(shortUnsafeProduct),
+  ];
+}
 
 describe('kural kayıt defteri sözleşmesi', () => {
   it('kayıt defteri sırası RULE_ID_LIST ile birebir aynıdır', () => {
@@ -37,20 +98,20 @@ describe('kural kayıt defteri sözleşmesi', () => {
   });
 
   it('bulgular kendi kuralının kimliğini ve şiddetini taşır (kayma koruması)', () => {
-    const findings = auditProduct(brokenProduct);
+    const findings = allBrokenFindings();
     expect(findings.length).toBeGreaterThanOrEqual(RULE_CATALOG.length);
     for (const finding of findings) {
       const rule = RULE_CATALOG.find((candidate) => candidate.id === finding.ruleId);
       expect(rule, `bilinmeyen kural: ${finding.ruleId}`).toBeDefined();
       expect(finding.severity).toBe(rule?.severity);
-      expect(finding.productId).toBe(brokenProduct.id);
+      expect([brokenProduct.id, shortUnsafeProduct.id]).toContain(finding.productId);
       expect(finding.message.trim().length).toBeGreaterThan(0);
       expect(finding.fixHint.trim().length).toBeGreaterThan(0);
     }
   });
 
-  it('her kural bozuk üründe en az bir bulgu üretir', () => {
-    const findings = auditProduct(brokenProduct);
+  it('her kural, bozuk örneklerin birinde mutlaka tetiklenir', () => {
+    const findings = allBrokenFindings();
     for (const rule of RULE_CATALOG) {
       expect(
         findings.some((finding) => finding.ruleId === rule.id),

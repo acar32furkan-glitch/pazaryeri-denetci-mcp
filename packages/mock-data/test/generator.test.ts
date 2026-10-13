@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { auditProduct, checkGtin, RULE_CATALOG } from '@pazaryeri-denetci/core';
+import { auditCatalog, auditProduct, checkGtin, RULE_CATALOG } from '@pazaryeri-denetci/core';
 
 import { DEFECT_KINDS, generateCatalog, generateCleanCatalog } from '../src/index.ts';
 import type { DefectKind } from '../src/index.ts';
 
-const SMALL = { seed: 42, productCount: 40, defectsPerKind: 4 } as const;
+const SMALL = { seed: 42, productCount: 100, defectsPerKind: 4 } as const;
 
 describe('generateCatalog — determinizm', () => {
   it('aynı seed birebir aynı katalog ve etiketleri üretir', () => {
@@ -21,8 +21,8 @@ describe('generateCatalog — determinizm', () => {
   });
 
   it('hata yerleşimi seed ile değişir ama tür sayıları sabit kalır', () => {
-    const first = generateCatalog({ seed: 42, productCount: 40, defectsPerKind: 4 });
-    const second = generateCatalog({ seed: 7, productCount: 40, defectsPerKind: 4 });
+    const first = generateCatalog({ seed: 42, productCount: 100, defectsPerKind: 4 });
+    const second = generateCatalog({ seed: 7, productCount: 100, defectsPerKind: 4 });
     expect(first.defects.map((defect) => defect.productId)).not.toEqual(
       second.defects.map((defect) => defect.productId),
     );
@@ -90,15 +90,17 @@ describe('generateCatalog — etiketler', () => {
 
   it('enjekte edilen hata YALNIZCA beklenen kuralı tetikler (yanlış pozitif yok)', () => {
     expect(RULE_CATALOG.length).toBeGreaterThan(0);
+    // Katalog düzeyinde denetim: ürünler arası SKU çakışması yalnızca indeksle görülebilir.
+    const result = auditCatalog(generated.catalog);
+    const rulesByProduct = new Map<string, string[]>();
+    for (const finding of result.findings) {
+      const list = rulesByProduct.get(finding.productId) ?? [];
+      list.push(finding.ruleId);
+      rulesByProduct.set(finding.productId, list);
+    }
     for (const defect of generated.defects) {
-      const product = generated.catalog.products.find(
-        (candidate) => candidate.id === defect.productId,
-      );
-      expect(product, `ürün yok: ${defect.productId}`).toBeDefined();
-      if (product === undefined) continue;
-      const findings = auditProduct(product);
       expect(
-        findings.map((finding) => finding.ruleId),
+        rulesByProduct.get(defect.productId) ?? [],
         `${defect.kind} → beklenen ${defect.expectedRuleId}`,
       ).toEqual([defect.expectedRuleId]);
     }
@@ -152,7 +154,15 @@ describe('generateCatalog — uç durumlar', () => {
 
 describe('generateCatalog — besleme tutarlılığı', () => {
   it('her varyantın her kanalda bir satırı vardır ve fiyat/stok ürünle aynıdır', () => {
-    const { catalog } = generateCatalog({ ...SMALL, channels: ['trendyol', 'n11'] });
+    // Bu test üreticinin TABAN ÇİZGİSİNİ doğrular; hata enjeksiyonu bilinçli olarak veriyi
+    // bozduğu için burada hatasız katalog kullanılır.
+    const { catalog } = generateCatalog({
+      seed: 42,
+      productCount: 30,
+      defectKinds: [],
+      defectsPerKind: 0,
+      channels: ['trendyol', 'n11'],
+    });
     const bySku = new Map<string, number>();
     for (const listing of catalog.listings) {
       if (listing.sku !== null) bySku.set(listing.sku, (bySku.get(listing.sku) ?? 0) + 1);

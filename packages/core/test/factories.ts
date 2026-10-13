@@ -27,7 +27,7 @@ export function makeProduct(overrides: Partial<Product> = {}): Product {
     handle: 'ornek-kazak-0001',
     title: 'Antrasit Yün Kazak Kadın Giyim',
     descriptionHtml:
-      '<p>Antrasit yün kazak, günlük kullanım için uygundur ve mevsimlik koleksiyonun bir parçasıdır.</p>',
+      '<p>Antrasit yün kazak, günlük kullanım için uygundur ve mevsimlik koleksiyonun bir parçasıdır. Yumuşak dokusu ve nefes alan yapısıyla gün boyu rahatlık sağlar; ölçüleri ve bakım bilgileri ürün sayfasında listelenmiştir.</p>',
     vendor: 'Test Atölye',
     productType: 'Kazak',
     tags: ['sentetik'],
@@ -43,6 +43,13 @@ export function makeProduct(overrides: Partial<Product> = {}): Product {
     ],
     variants: [makeVariant()],
     metafields: [
+      {
+        namespace: 'sentetik',
+        key: 'yas_grubu',
+        type: 'single_line_text_field',
+        value: 'Yetişkin',
+      },
+      { namespace: 'sentetik', key: 'materyal', type: 'single_line_text_field', value: 'Yün' },
       { namespace: 'sentetik', key: 'renk', type: 'single_line_text_field', value: 'Gri' },
     ],
     ...overrides,

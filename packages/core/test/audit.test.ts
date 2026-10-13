@@ -9,15 +9,33 @@ import {
   topFindings,
 } from '../src/index.ts';
 import type { Severity } from '../src/index.ts';
-import { makeCatalog, makeListing, makeProduct } from './factories.ts';
+import { makeCatalog, makeListing, makeProduct, makeVariant } from './factories.ts';
 
 describe('auditCatalog', () => {
-  const clean = makeProduct({ id: 'snt-prd-0001' });
-  const shortTitle = makeProduct({ id: 'snt-prd-0002', title: 'Kazak' });
-  const emptyDescription = makeProduct({ id: 'snt-prd-0003', descriptionHtml: '' });
+  // Fixture'ların SKU'ları bilinçli olarak FARKLI: katalog indeksi paylaşıldığı için aynı SKU
+  // kullanmak SKU_DUPLICATE kuralını tetikler ve testin amacını gölgeler.
+  const clean = makeProduct({
+    id: 'snt-prd-0001',
+    variants: [makeVariant({ sku: 'SNT-0001-01' })],
+  });
+  const shortTitle = makeProduct({
+    id: 'snt-prd-0002',
+    title: 'Kazak',
+    variants: [makeVariant({ sku: 'SNT-0002-01' })],
+  });
+  const emptyDescription = makeProduct({
+    id: 'snt-prd-0003',
+    descriptionHtml: '',
+    variants: [makeVariant({ sku: 'SNT-0003-01' })],
+  });
   const noAlt = makeProduct({
     id: 'snt-prd-0004',
-    images: [{ url: 'https://cdn.test/x.jpg', altText: null }],
+    variants: [makeVariant({ sku: 'SNT-0004-01' })],
+    images: [
+      { url: 'https://cdn.test/a.jpg', altText: 'ön görünüm' },
+      { url: 'https://cdn.test/b.jpg', altText: null },
+      { url: 'https://cdn.test/c.jpg', altText: 'arka görünüm' },
+    ],
   });
 
   it('bulguları şiddet → kural → ürün sırasına göre sıralar (kararlı çıktı)', () => {
