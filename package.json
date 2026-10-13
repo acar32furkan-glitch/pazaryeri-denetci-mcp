@@ -20,6 +20,7 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "eval": "tsx packages/eval/src/cli.ts",
+    "eval:check": "tsx packages/eval/src/cli.ts --check",
     "gates": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test"
   },
   "devDependencies": {

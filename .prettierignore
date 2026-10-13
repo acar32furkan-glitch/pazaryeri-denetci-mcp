@@ -4,3 +4,6 @@ coverage/
 dist/
 .next/
 .cache/
+# EVAL.md üretici tarafından yazılır ve `eval --check` dosyayı birebir karşılaştırır:
+# prettier bu dosyayı yeniden biçimlendirmemeli.
+docs/EVAL.md

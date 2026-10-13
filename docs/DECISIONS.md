@@ -87,6 +87,23 @@ yanlış kuralı "gerçek" diye sunmak kullanıcıyı yanıltır.
 
 ---
 
+## ADR-009 — Eval eşleşme anahtarı ve eşik politikası
+
+**Karar:** Etiket ↔ bulgu eşleşmesi `(kural, ürün, varyant SKU)` üçlüsü üzerinden yapılır; alan
+(`field`) anahtara **dâhil edilmez**. Eşikler başlangıçta precision ve recall için %100'dür ve CI'da
+kapıdır (`pnpm run eval:check`).
+
+**Alan neden anahtarda değil:** Aynı kural aynı varyantta birden çok alanı işaret edebilir (ör. bir
+üründe iki görselin alt metni eksik). Bu, kuralın hatayı bulup bulmadığını değiştirmez; alan bilgisi
+raporun "nerede" sütununda yaşar ve precision'ı yapay olarak düşürmez.
+
+**Neden %100 eşik:** Sentetik üretici her ürüne en fazla **bir** hata enjekte eder ve etiketler ile
+kurallar aynı sözleşmeyi paylaşır; dolayısıyla %100 ulaşılabilir bir hedeftir ve her sapma gerçek bir
+regresyondur. Eşik düşürülecekse gerekçesi buraya yazılır — sessizce gevşetilmez.
+
+**Rapor = üretici çıktısı:** `docs/EVAL.md` elle düzenlenmez; `pnpm run eval` yazar. Bu yüzden
+prettier onu biçimlendirmez (`.prettierignore`) ve CI üretilen içerikle birebir karşılaştırır.
+
 ## Varsayımlar (soru sorulmadan alınan kararlar)
 
 1. Arayüz ve rapor metinleri **Türkçe**; kod, teknik tanımlayıcılar ve README İngilizce bölümüyle

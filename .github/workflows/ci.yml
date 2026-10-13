@@ -34,3 +34,5 @@ jobs:
         run: pnpm run typecheck
       - name: Testler
         run: pnpm run test
+      - name: Eval (kural bazlı precision/recall eşiği + rapor güncel mi)
+        run: pnpm run eval:check
