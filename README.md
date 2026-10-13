@@ -117,6 +117,9 @@ Eşik `minSuggestPassRate = 1`: oran düşerse `pnpm run eval:check` (ve CI) kı
 `pnpm run eval:bench` ile ölçüldü: denetim **1358,7 ms** (7360 ürün/sn), üretim 365,4 ms,
 200'lük dilimlerle tam sayfalama 0,1 ms, RSS 223,1 MB. Ayrıntı: `docs/PERFORMANS.md`.
 
+> Tek koşu ölçümüdür: aynı makinede ikinci bir koşuda 1175,3 ms (**8508 ürün/sn**) ölçüldü. İki koşu
+> arasındaki fark donanım/yük varyansıdır; `docs/DEMO.md` ikisini de listeler.
+
 ### CSV'den denetim
 
 ```bash
