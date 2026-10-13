@@ -7,8 +7,9 @@ raporlayan ve bunu bir MCP sunucusu üzerinden AI ajanlarına açan açık kayna
 ![lisans](https://img.shields.io/badge/lisans-MIT-blue)
 ![node](https://img.shields.io/badge/node-%3E%3D20-informational)
 
-> 🚧 **Durum: Faz 1 tamamlandı** — 6 denetim kuralı, seed'li sentetik üretici ve eval harness'ı
-> çalışıyor (ölçülmüş sonuçlar aşağıda). Bu README Faz 6'da tamamlanır: canlı demo linki, 60–90
+> 🚧 **Durum: Faz 2 tamamlandı** — 17 denetim kuralı, CSV içe aktarma, Türkçe/JSON rapor üreticileri
+> ve eval harness'ı çalışıyor (ölçülmüş sonuçlar aşağıda). Bu README Faz 6'da tamamlanır: canlı demo
+> linki, 60–90
 > saniyelik ekran kaydı, mimari diyagramı ve **ölçülmüş** eval tablosu o bölümde yer alacak.
 
 Bu depodaki tüm katalog verisi **sentetiktir**; gerçek bir markanın ürün, fiyat veya stok verisi
@@ -30,7 +31,7 @@ Denetim kuralları deterministiktir (test ve eval güvenilir olsun diye); LLM ya
 | --- | ---------------------------------------------- | ----------- |
 | 0   | Monorepo iskeleti, kapılar, CI, DECISIONS.md   | ✅ tamam    |
 | 1   | Sentetik katalog üretici + çekirdek + 6 kural  | ✅ tamam    |
-| 2   | Kalan kurallar, rapor, CSV, uç durumlar        | ⬜ bekliyor |
+| 2   | Kalan kurallar, rapor, CSV, uç durumlar        | ✅ tamam    |
 | 3   | MCP sunucusu (stdio) + entegrasyon testleri    | ⬜ bekliyor |
 | 4   | Web demo + Streamable HTTP + güvenlik + deploy | ⬜ bekliyor |
 | 5   | LLM öneri katmanı (mock ile doğrulanır)        | ⬜ bekliyor |
@@ -43,13 +44,25 @@ Sentetik üretici hata enjekte ederken her hatayı etiketler; eval harness'ı et
 **Aşağıdaki rakamlar gerçek bir koşudan gelir**; tam tablo `docs/EVAL.md` içindedir ve
 `pnpm run eval` ile yeniden üretilir (CI bunu `pnpm run eval:check` ile kapı yapar).
 
-| Koşu                   | Ürün | Etiketli hata | Bulgu | Precision | Recall |
-| ---------------------- | ---- | ------------- | ----- | --------- | ------ |
-| seed 20261013, 6 kural | 500  | 140           | 140   | %100,0    | %100,0 |
+| Koşu          | Kural | Ürün | Etiketli hata | Bulgu | Precision | Recall |
+| ------------- | ----- | ---- | ------------- | ----- | --------- | ------ |
+| seed 20261013 | 17    | 1000 | 420           | 420   | %100,0    | %100,0 |
 
 Bu %100 **sentetik veri üzerinde** ölçülmüştür: etiketler ile kurallar aynı sözleşmeyi paylaşır, bu
 yüzden beklenen sonuçtur — gerçek dünya kataloglarındaki doğruluk oranı iddiası **değildir**
 (bkz. Sınırlılıklar).
+
+### Büyük katalog (10.000 ürün)
+
+`pnpm run eval:bench` ile ölçüldü: denetim **1358,7 ms** (7360 ürün/sn), üretim 365,4 ms,
+200'lük dilimlerle tam sayfalama 0,1 ms, RSS 223,1 MB. Ayrıntı: `docs/PERFORMANS.md`.
+
+### CSV'den denetim
+
+```bash
+pnpm run audit:csv -- examples/ornek-katalog.csv          # Türkçe Markdown raporu
+pnpm run audit:csv -- examples/ornek-katalog.csv --json   # özet + satır bazlı içe aktarma uyarıları
+```
 
 ## Geliştirme
 

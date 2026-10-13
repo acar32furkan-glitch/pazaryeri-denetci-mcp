@@ -13,3 +13,8 @@ Bu proje [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) biçimini ve
   `SKU_MISSING`, `BARCODE_INVALID`), GTIN/EAN sağlama toplamı doğrulaması, seed'li sentetik katalog
   üreticisi (her hatayı etiketleyen hata enjeksiyonu) ve kural bazlı precision/recall üreten eval
   harness'ı (`pnpm run eval`, CI kapısı `pnpm run eval:check`).
+- Faz 2: kalan 11 kural (toplam **17**), katalog indeksi (ürünler arası SKU çakışması), sayfalama
+  (`pageFindings`), XSS tespiti ve temizleyici (`containsUnsafeHtml`/`sanitizeHtml`), Türkçe
+  Markdown + deterministik JSON rapor üreticisi, `packages/catalog-io` (CSV: BOM ve Windows-1254
+  kodlama, `1.299,90` biçiminde TR sayılar, satır bazlı uyarılar; JSON dışa/içe aktarma) ve
+  10.000 ürünlük performans ölçümü (`pnpm run eval:bench`).

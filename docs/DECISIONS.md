@@ -104,6 +104,48 @@ regresyondur. Eşik düşürülecekse gerekçesi buraya yazılır — sessizce g
 **Rapor = üretici çıktısı:** `docs/EVAL.md` elle düzenlenmez; `pnpm run eval` yazar. Bu yüzden
 prettier onu biçimlendirmez (`.prettierignore`) ve CI üretilen içerikle birebir karşılaştırır.
 
+## ADR-010 — Her sorunun **tek sahibi** kural vardır (çift raporlama yasağı)
+
+**Karar:** Aynı veri sorunu iki kural tarafından raporlanmaz; kapsam sınırları kodda ve yorumlarda
+yazılıdır. Örnekler:
+
+- `VARIANT_MISSING_PRICE_OR_STOCK` fiyatı/stoku eksik varyantın sahibidir → `CHANNEL_MISMATCH` ve
+  `PRICE_COMPARE_AT_INVALID` o varyant için susar.
+- SKU'su tekrar eden varyantın sahibi `SKU_DUPLICATE`'tir → `CHANNEL_MISMATCH` o SKU'yu atlar
+  (SKU tek bir varyantı işaret etmiyorsa "kanal verisi uyuşmuyor" demek anlamsızdır).
+- Boş açıklamanın sahibi `DESC_MISSING`'dir → `DESC_TOO_SHORT` yalnızca **dolu ama kısa** metinde
+  bağırır.
+- `DESC_UNSAFE_HTML` bir ürün için tek bulgu üretir (ilk bozuk alan), `SEO_META_MISSING` eksik
+  alanların hepsini tek bulguda sayar.
+
+**Neden:** Çift raporlama (a) kullanıcıya aynı hatayı iki kez gösterir, (b) eval'de yapay yanlış
+pozitif üretir ve precision'ı düşürür, (c) "kaç sorun var" sorusunu cevaplanamaz hâle getirir.
+Bu ilke ihlal edilirse `pnpm run eval:check` kırılır.
+
+## ADR-011 — `catalog-io` paketi ve kodlama kararı
+
+**Karar:** CSV/JSON içe-dışa aktarma `core`'dan ayrı bir pakete (`packages/catalog-io`) konuldu;
+`core` saf fonksiyon kalır (dosya sistemi yok).
+
+**Kodlama:** `TextDecoder('windows-1254')` kullanıldı; `iconv-lite` bağımlılığı **kaldırıldı**
+(0.7.x CJS `export =` biçiminde ve `verbatimModuleSyntax` + `nodenext` altında gereksiz sürtünme
+yaratıyor; Node'un ICU destekli `TextDecoder` aynı çözümü veriyor — testler `0xFD→ı`, `0xFE→ş`,
+`0xE7→ç` eşlemelerini doğruluyor).
+
+**CSV şeması:** satır = varyant; aynı `handle` tekrar eden satırlar tek ürünün varyantları olur
+(gerçek dışa aktarmalarda en sık görülen biçim). Zorunlu kolonlar `MINIMAL_CSV_COLUMNS` içinde.
+
+**`Product.id = handle`:** CSV şemasında ayrı bir kimlik kolonu yok; `handle` gruplamadan sonra
+benzersiz olduğu için kimlik olarak kullanılır.
+
+## ADR-012 — Performans bütçesi ve sayfalama
+
+**Karar:** `paginate`/`pageFindings` sayfa üst sınırı 500; MCP araçları liste dönerken sayfalama
+kullanır. Ölçüm `pnpm run eval:bench` ile alınır ve `docs/PERFORMANS.md`'ye yazılır.
+
+**Ölçüm (10.000 ürün, 17 kural):** denetim 1358,7 ms (7360 ürün/sn), üretim 365,4 ms, sayfalama
+0,1 ms, RSS 223,1 MB. Akış tabanlı (streaming) içe aktarma kapsam dışı; `maxRows` ile üst sınır var.
+
 ## Varsayımlar (soru sorulmadan alınan kararlar)
 
 1. Arayüz ve rapor metinleri **Türkçe**; kod, teknik tanımlayıcılar ve README İngilizce bölümüyle
