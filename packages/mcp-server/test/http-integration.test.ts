@@ -252,7 +252,7 @@ describe('MCP sunucusu — Streamable HTTP taşıması', () => {
     'geçerli token ile araçlar HTTP üzerinden çağrılır (gerçek bulgular)',
     async () => {
       const { tools } = await client.listTools();
-      expect(tools.length).toBe(6);
+      expect(tools.length).toBe(7);
 
       const result = (await client.callTool({
         name: 'audit_catalog',

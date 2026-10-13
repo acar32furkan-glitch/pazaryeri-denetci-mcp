@@ -64,7 +64,7 @@ describe('MCP sunucusu — stdio entegrasyonu', () => {
   });
 
   it(
-    'araç listesi beklenen 6 salt-okunur aracı içerir ve açıklamaları doludur',
+    'araç listesi beklenen 7 salt-okunur aracı içerir ve açıklamaları doludur',
     async () => {
       const { tools } = await client.listTools();
       const names = tools.map((tool) => tool.name).sort();
@@ -75,11 +75,18 @@ describe('MCP sunucusu — stdio entegrasyonu', () => {
         'export_report',
         'get_product',
         'list_products',
+        'suggest_fix',
       ]);
       for (const tool of tools) {
         expect((tool.description ?? '').length).toBeGreaterThan(20);
         expect(tool.inputSchema).toBeDefined();
       }
+      // Araç açıklaması "öneri-only" sözleşmesini açıkça taşımalı (ajan yanlış aracı seçmesin).
+      const suggest = tools.find((tool) => tool.name === 'suggest_fix');
+      expect(suggest?.description ?? '').toContain(
+        'yalnızca öneri döner, hiçbir değişikliği uygulamaz',
+      );
+      expect(tools.length).toBe(7);
     },
     TEST_TIMEOUT,
   );
@@ -282,6 +289,264 @@ describe('MCP sunucusu — stdio entegrasyonu', () => {
       });
       const text = JSON.stringify(productPrompt.messages);
       expect(text).toContain(id);
+    },
+    TEST_TIMEOUT,
+  );
+});
+
+/**
+ * `suggest_fix` senaryoları ayrı sunucu süreçleriyle koşar: öneri modu **ortam değişkeninden**
+ * seçildiği için modu gerçekten süreç sınırında doğrulamak gerekir.
+ *
+ * Hiçbir senaryoda ağa çıkılmaz: `mock` sahte istemci, `off` devre dışı istemci kullanır.
+ */
+const SUGGEST_ENV = {
+  MOCK_CATALOG_PRODUCTS: String(PRODUCTS),
+  MOCK_CATALOG_DEFECTS_PER_KIND: '1',
+  MOCK_CATALOG_SEED: '4242',
+} as const;
+
+/** Bulgusu olan (başlık/açıklama düzeltmesi isteyen) ürün kimliklerini sırayla döner. */
+async function fixableProductIds(client: Client): Promise<string[]> {
+  const audit = parseJson(
+    toolResult(await client.callTool({ name: 'audit_catalog', arguments: { topN: 100 } })),
+  );
+  const findings = audit['findings'] as { productId: string; field: string }[];
+  const ids = new Set(
+    findings
+      .filter((finding) => finding.field === 'title' || finding.field === 'descriptionHtml')
+      .map((finding) => finding.productId),
+  );
+  if (ids.size === 0) {
+    throw new Error('Test kurgusu: düzeltilebilir bulgusu olan ürün bulunamadı');
+  }
+  return [...ids];
+}
+
+/** Bulgusu olan tek bir ürün kimliği bulur. */
+async function firstFixableProductId(client: Client): Promise<string> {
+  const ids = await fixableProductIds(client);
+  const first = ids[0];
+  if (first === undefined) throw new Error('Test kurgusu: düzeltilebilir ürün yok');
+  return first;
+}
+
+/** Tek ürün denetiminde hiç bulgu üretmeyen bir ürün kimliği bulur (eksiksiz ürün). */
+async function firstCleanProductId(client: Client): Promise<string> {
+  const page = parseJson(
+    toolResult(await client.callTool({ name: 'list_products', arguments: { limit: 200 } })),
+  );
+  for (const item of page['items'] as { id: string }[]) {
+    const audit = parseJson(
+      toolResult(await client.callTool({ name: 'audit_product', arguments: { id: item.id } })),
+    );
+    if (audit['findingCount'] === 0) return item.id;
+  }
+  throw new Error('Test kurgusu: bulgusuz ürün bulunamadı');
+}
+
+describe('MCP sunucusu — suggest_fix (salt-öneri aracı)', () => {
+  let mockClient: Client;
+  let offClient: Client;
+  let quotaClient: Client;
+
+  beforeAll(async () => {
+    mockClient = new Client({ name: 'suggest-mock-test', version: '0.0.0' });
+    await mockClient.connect(
+      new StdioClientTransport({
+        command: process.execPath,
+        args: ['--import', 'tsx', serverEntry],
+        cwd: repoRoot,
+        env: {
+          ...getDefaultEnvironment(),
+          ...SUGGEST_ENV,
+          MCP_LLM_MODE: 'mock',
+        },
+      }),
+    );
+
+    offClient = new Client({ name: 'suggest-off-test', version: '0.0.0' });
+    await offClient.connect(
+      new StdioClientTransport({
+        command: process.execPath,
+        args: ['--import', 'tsx', serverEntry],
+        cwd: repoRoot,
+        env: {
+          ...getDefaultEnvironment(),
+          ...SUGGEST_ENV,
+          MCP_LLM_MODE: 'off',
+          // Anahtar bilinçli olarak boş: devre dışı yolun tek gerekçesi mod değil, anahtarsızlık da olabilir.
+          ANTHROPIC_API_KEY: '',
+        },
+      }),
+    );
+    quotaClient = new Client({ name: 'suggest-quota-test', version: '0.0.0' });
+    await quotaClient.connect(
+      new StdioClientTransport({
+        command: process.execPath,
+        args: ['--import', 'tsx', serverEntry],
+        cwd: repoRoot,
+        env: {
+          ...getDefaultEnvironment(),
+          ...SUGGEST_ENV,
+          MCP_LLM_MODE: 'mock',
+          // 1 token bütçesi: sahte istemci çağrı başına 800 girdi token'ı harcar → ikinci istek "kota".
+          LLM_DAILY_TOKEN_BUDGET: '1',
+        },
+      }),
+    );
+  }, TEST_TIMEOUT);
+
+  afterAll(async () => {
+    await mockClient.close();
+    await offClient.close();
+    await quotaClient.close();
+  });
+
+  it(
+    'suggest_fix araç listesinde görünür (toplam 7 araç)',
+    async () => {
+      const { tools } = await mockClient.listTools();
+      const names = tools.map((tool) => tool.name).sort();
+      expect(names).toContain('suggest_fix');
+      expect(tools.length).toBe(7);
+    },
+    TEST_TIMEOUT,
+  );
+
+  it(
+    'MCP_LLM_MODE=mock: sahte istemci öneri üretir, mod "mock" raporlanır ve uyarı metni bulunur',
+    async () => {
+      const id = await firstFixableProductId(mockClient);
+      const payload = parseJson(
+        toolResult(
+          await mockClient.callTool({ name: 'suggest_fix', arguments: { id, topFindings: 3 } }),
+        ),
+      );
+
+      expect(payload['productId']).toBe(id);
+      expect(payload['status']).toBe('ok');
+      expect(payload['mode']).toBe('mock');
+      expect(payload['model']).toBe('mock-demo');
+      expect(payload['source']).toBe('llm');
+      expect(payload['findingsConsidered']).toBeGreaterThan(0);
+      expect(String(payload['message'])).toContain('sahte/demo istemci');
+      expect(String(payload['rationale']).length).toBeGreaterThan(0);
+      expect(['low', 'medium', 'high']).toContain(payload['confidence']);
+      expect((payload['addressedRuleIds'] as string[]).length).toBeGreaterThan(0);
+
+      // Önerilen alanlar dolu: sahte istemci en az bir alanı yeniden yazar.
+      const fields = payload['fields'] as Record<string, string>;
+      const filled = Object.values(fields).filter(
+        (value) => typeof value === 'string' && value.length > 0,
+      );
+      expect(filled.length).toBeGreaterThan(0);
+
+      // Aynı girdi ikinci kez sorulduğunda LLM'e tekrar gidilmez (önbellek → maliyet kontrolü).
+      const second = parseJson(
+        toolResult(
+          await mockClient.callTool({ name: 'suggest_fix', arguments: { id, topFindings: 3 } }),
+        ),
+      );
+      expect(second['status']).toBe('ok');
+      expect(second['source']).toBe('cache');
+    },
+    TEST_TIMEOUT,
+  );
+
+  it(
+    'MCP_LLM_MODE=off: yapılandırılmış "devre-disi" yanıtı verir ve sunucu ayakta kalır',
+    async () => {
+      const id = await firstFixableProductId(offClient);
+      const payload = parseJson(
+        toolResult(await offClient.callTool({ name: 'suggest_fix', arguments: { id } })),
+      );
+
+      expect(payload['status']).toBe('unavailable');
+      expect(payload['reason']).toBe('devre-disi');
+      expect(payload['mode']).toBe('devre-disi');
+      expect(payload['model']).toBeNull();
+      expect(String(payload['message']).length).toBeGreaterThan(20);
+      expect(payload['productId']).toBe(id);
+
+      // Çökme yok: sonraki çağrılar ve tools/list çalışmaya devam ediyor.
+      const after = toolResult(
+        await offClient.callTool({ name: 'audit_catalog', arguments: { topN: 1 } }),
+      );
+      expect(after.isError).not.toBe(true);
+      const { tools } = await offClient.listTools();
+      expect(tools.length).toBe(7);
+    },
+    TEST_TIMEOUT,
+  );
+
+  it(
+    'olmayan ürün kimliğinde yapılandırılmış hata verir ve süreç çökmez',
+    async () => {
+      const missing = toolResult(
+        await mockClient.callTool({ name: 'suggest_fix', arguments: { id: 'snt-prd-9999' } }),
+      );
+      expect(missing.isError).toBe(true);
+      expect(firstText(missing)).toContain('Ürün bulunamadı');
+
+      // Kimlik de handle de verilmezse açık hata:
+      const neither = toolResult(await mockClient.callTool({ name: 'suggest_fix', arguments: {} }));
+      expect(neither.isError).toBe(true);
+      expect(firstText(neither)).toContain('id');
+
+      // Hata sonrası sunucu hâlâ yanıt veriyor:
+      const after = toolResult(
+        await mockClient.callTool({ name: 'list_products', arguments: { limit: 1 } }),
+      );
+      expect(after.isError).not.toBe(true);
+      expect(parseJson(after)['total']).toBe(PRODUCTS);
+    },
+    TEST_TIMEOUT,
+  );
+
+  it(
+    'bulgusuz üründe öneri istenmez ve açık mesajla döner (hata değildir)',
+    async () => {
+      const id = await firstCleanProductId(mockClient);
+      const result = toolResult(
+        await mockClient.callTool({ name: 'suggest_fix', arguments: { id } }),
+      );
+      expect(result.isError).not.toBe(true);
+
+      const payload = parseJson(result);
+      expect(payload['productId']).toBe(id);
+      expect(payload['status']).toBe('ok');
+      expect(payload['findingsConsidered']).toBe(0);
+      expect(String(payload['message'])).toContain('düzeltilecek bulgu yok');
+      // Öneri istenmedi: alan/gerekçe döndürülmez.
+      expect(payload['fields']).toBeUndefined();
+      expect(payload['rationale']).toBeUndefined();
+    },
+    TEST_TIMEOUT,
+  );
+
+  it(
+    'LLM_DAILY_TOKEN_BUDGET ortam değişkeni uygulanır: bütçe dolunca "kota" döner',
+    async () => {
+      const ids = await fixableProductIds(quotaClient);
+      const first = ids[0];
+      const second = ids[1];
+      expect(first).toBeDefined();
+      expect(second).toBeDefined();
+      expect(second).not.toBe(first);
+
+      const allowed = parseJson(
+        toolResult(await quotaClient.callTool({ name: 'suggest_fix', arguments: { id: first } })),
+      );
+      expect(allowed['status']).toBe('ok');
+
+      // Farklı ürün → önbellek ıskası → bütçe zaten doldu → öneri üretilmez (hata değil, kotadır).
+      const blocked = parseJson(
+        toolResult(await quotaClient.callTool({ name: 'suggest_fix', arguments: { id: second } })),
+      );
+      expect(blocked['status']).toBe('unavailable');
+      expect(blocked['reason']).toBe('kota');
+      expect(String(blocked['message'])).toContain('token bütçesi');
     },
     TEST_TIMEOUT,
   );

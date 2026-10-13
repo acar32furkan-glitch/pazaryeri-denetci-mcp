@@ -40,7 +40,7 @@ describe.skipIf(!built)('MCP sunucusu — derlenmiş giriş (dist/bin.js)', () =
   });
 
   it(
-    'derlenmiş sunucu 6 aracı listeler',
+    'derlenmiş sunucu 7 aracı listeler',
     async () => {
       const { tools } = await client.listTools();
       expect(tools.map((tool) => tool.name).sort()).toEqual([
@@ -50,7 +50,41 @@ describe.skipIf(!built)('MCP sunucusu — derlenmiş giriş (dist/bin.js)', () =
         'export_report',
         'get_product',
         'list_products',
+        'suggest_fix',
       ]);
+    },
+    TEST_TIMEOUT,
+  );
+
+  it(
+    'derlenmiş sunucu suggest_fix aracını yükler (harici suggest paketi çalışma zamanında çözülür)',
+    async () => {
+      // Anahtar/mode verilmediği için öneri katmanı devre dışıdır; araç yine de yapılandırılmış
+      // yanıt vermeli ve süreç çökmemeli. Bu çağrı, `--packages=external` ile paketlenen derlemenin
+      // `@pazaryeri-denetci/suggest` modülünü gerçekten çözebildiğini de kanıtlar.
+      const audit = (await client.callTool({
+        name: 'audit_catalog',
+        arguments: { topN: 100 },
+      })) as unknown as { content?: { type: string; text?: string }[]; isError?: boolean };
+      const auditText = audit.content?.find((block) => block.type === 'text')?.text ?? '{}';
+      const findings = (
+        JSON.parse(auditText) as { findings: { productId: string; field: string }[] }
+      ).findings;
+      const fixable = findings.find(
+        (finding) => finding.field === 'title' || finding.field === 'descriptionHtml',
+      );
+      expect(fixable).toBeDefined();
+
+      const result = (await client.callTool({
+        name: 'suggest_fix',
+        arguments: { id: fixable?.productId ?? '' },
+      })) as unknown as { content?: { type: string; text?: string }[]; isError?: boolean };
+      expect(result.isError).not.toBe(true);
+      const text = result.content?.find((block) => block.type === 'text')?.text ?? '{}';
+      const payload = JSON.parse(text) as { status: string; reason?: string; mode: string };
+      expect(payload.status).toBe('unavailable');
+      expect(payload.reason).toBe('devre-disi');
+      expect(payload.mode).toBe('devre-disi');
     },
     TEST_TIMEOUT,
   );

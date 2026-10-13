@@ -26,6 +26,7 @@ import {
 
 import type { ServerConfig } from './config.ts';
 import type { AuditResult, Finding, Product, Rule, Severity } from '@pazaryeri-denetci/core';
+import type { SuggestFinding, SuggestProduct, SuggestRequest } from '@pazaryeri-denetci/suggest';
 
 const SERVER_NAME = 'pazaryeri-denetci';
 const SERVER_VERSION = '0.1.0';
@@ -33,6 +34,15 @@ const DEFAULT_LIST_LIMIT = 20;
 const MAX_LIST_LIMIT = 200;
 const DEFAULT_TOP_N = 10;
 const MAX_TOP_N = 100;
+const DEFAULT_TOP_FINDINGS = 5;
+const MAX_TOP_FINDINGS = 20;
+
+/** Sahte istemci kullanıldığında çıktıya eklenen açık uyarı — "gerçek model mi" karışıklığı olmasın. */
+const MOCK_NOTICE =
+  'Uyarı: sahte/demo istemci kullanıldı, gerçek model çağrılmadı. Çıktı yalnızca öneridir.';
+
+/** Düzeltilecek bulgu yoksa dönen açık mesaj; bu bir hata değildir. */
+const NO_FINDINGS_MESSAGE = 'Bu üründe düzeltilecek bulgu yok; öneri istenmedi.';
 
 function text(value: string, isError = false): CallToolResult {
   return isError
@@ -52,6 +62,45 @@ function guarded(toolName: string, body: () => CallToolResult): CallToolResult {
     const message = error instanceof Error ? error.message : String(error);
     return json({ error: true, tool: toolName, message: `Araç çalıştırılamadı: ${message}` }, true);
   }
+}
+
+/** `guarded`'ın eşzamansız (LLM çağrısı yapan) araçlar için eşi: reddedilen söz de yakalanır. */
+async function guardedAsync(
+  toolName: string,
+  body: () => Promise<CallToolResult>,
+): Promise<CallToolResult> {
+  try {
+    return await body();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return json({ error: true, tool: toolName, message: `Araç çalıştırılamadı: ${message}` }, true);
+  }
+}
+
+/** Denetim bulgusunu öneri katmanının gördüğü dar yapıya eşler (core tipine bağımlılık taşınmaz). */
+function toSuggestFinding(finding: Finding): SuggestFinding {
+  return {
+    ruleId: finding.ruleId,
+    severity: finding.severity,
+    field: finding.field,
+    message: finding.message,
+    fixHint: finding.fixHint,
+    evidence: finding.evidence,
+  };
+}
+
+/** Ürünü öneri katmanının gördüğü alanlara indirger; gönderilmeyen veri LLM'e gitmez. */
+function toSuggestProduct(product: Product): SuggestProduct {
+  return {
+    id: product.id,
+    title: product.title,
+    descriptionHtml: product.descriptionHtml,
+    seoTitle: product.seo.title,
+    seoDescription: product.seo.description,
+    productType: product.productType,
+    vendor: product.vendor,
+    tags: product.tags,
+  };
 }
 
 function selectRules(ruleIds: readonly string[] | undefined): readonly Rule[] {
@@ -109,7 +158,7 @@ export function ruleCatalogJson(): string {
 
 export function createServer(config: ServerConfig): McpServer {
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
-  const { catalog } = config;
+  const { catalog, llm } = config;
   const auditOf = (rules?: readonly Rule[]): AuditResult =>
     rules === undefined ? auditCatalog(catalog) : auditCatalog(catalog, { rules });
 
@@ -366,6 +415,88 @@ export function createServer(config: ServerConfig): McpServer {
           rules: RULE_CATALOG,
         });
         return text(markdown);
+      }),
+  );
+
+  server.registerTool(
+    'suggest_fix',
+    {
+      title: 'Düzeltme önerisi üret (salt-öneri)',
+      description:
+        'Bir ürünün en kritik bulgularına bakarak başlık/açıklama/SEO için düzeltme önerisi üretir. ' +
+        'Bu araç **yalnızca öneri döner, hiçbir değişikliği uygulamaz**: ürünü değiştirmez, dosyaya ' +
+        'ya da dış sisteme hiçbir şey yazmaz. LLM yapılandırılmadıysa yapılandırılmış ' +
+        '"unavailable/devre-disi" yanıtı verir ve sunucu çalışmaya devam eder. ' +
+        'Düzeltmeyi uygulamak istemiyorsanız, önerilen metinleri görmek için kullanın.',
+      inputSchema: z.object({
+        id: z.string().optional().describe('Ürün kimliği, ör. snt-prd-0001'),
+        handle: z.string().optional(),
+        targets: z
+          .array(z.enum(['title', 'descriptionHtml', 'seoTitle', 'seoDescription']))
+          .optional()
+          .describe('Öneri istenen alanlar; verilmezse bulguların kapsadığı alanlar istenir'),
+        topFindings: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_TOP_FINDINGS)
+          .optional()
+          .describe('Öneriye girecek en kritik bulgu sayısı (varsayılan 5)'),
+      }),
+    },
+    ({ id, handle, targets, topFindings }) =>
+      guardedAsync('suggest_fix', async () => {
+        const product = findProduct(catalog.products, id, handle);
+        // Tek ürün denetimi: `audit_product` ile aynı yol (indeks yok → ürün-ötesi kurallar susar).
+        const result = auditCatalog({ products: [product], listings: catalog.listings });
+        const considered = result.findings.slice(0, topFindings ?? DEFAULT_TOP_FINDINGS);
+
+        const base = {
+          productId: product.id,
+          mode: llm.mode,
+          model: llm.client.model,
+        };
+
+        if (considered.length === 0) {
+          return json({
+            ...base,
+            status: 'ok',
+            findingsConsidered: 0,
+            message:
+              llm.mode === 'mock' ? `${NO_FINDINGS_MESSAGE} ${MOCK_NOTICE}` : NO_FINDINGS_MESSAGE,
+          });
+        }
+
+        const request: SuggestRequest = {
+          product: toSuggestProduct(product),
+          findings: considered.map(toSuggestFinding),
+          // `exactOptionalPropertyTypes`: boş hedefi `undefined` olarak geçmek yerine hiç yazmıyoruz.
+          ...(targets === undefined || targets.length === 0 ? {} : { targets }),
+        };
+        const outcome = await llm.suggester.suggest(request);
+
+        if (outcome.status === 'unavailable') {
+          return json({
+            ...base,
+            status: 'unavailable',
+            findingsConsidered: considered.length,
+            reason: outcome.reason,
+            message: outcome.message,
+          });
+        }
+
+        const suggestion = outcome.suggestion;
+        return json({
+          ...base,
+          status: 'ok',
+          source: outcome.source,
+          findingsConsidered: considered.length,
+          fields: suggestion.fields,
+          rationale: suggestion.rationale,
+          confidence: suggestion.confidence,
+          addressedRuleIds: suggestion.addressedRuleIds,
+          ...(llm.mode === 'mock' ? { message: MOCK_NOTICE } : {}),
+        });
       }),
   );
 
