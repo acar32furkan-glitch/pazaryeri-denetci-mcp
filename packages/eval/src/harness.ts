@@ -3,9 +3,11 @@ import { generateCatalog } from '@pazaryeri-denetci/mock-data';
 
 import { evaluate } from './metrics.ts';
 import { renderMarkdown } from './report.ts';
-import { DEFAULT_THRESHOLDS, checkThresholds } from './thresholds.ts';
+import { runSuggestQuality } from './suggest-quality.ts';
+import { DEFAULT_THRESHOLDS, checkSuggestThreshold, checkThresholds } from './thresholds.ts';
 
 import type { EvalReport } from './metrics.ts';
+import type { SuggestQualityOptions, SuggestQualityReport } from './suggest-quality.ts';
 import type { Thresholds } from './thresholds.ts';
 import type { Rule } from '@pazaryeri-denetci/core';
 import type { GeneratedCatalog } from '@pazaryeri-denetci/mock-data';
@@ -36,9 +38,16 @@ export interface EvalRun {
 export interface EvalRunOptions {
   readonly rules?: readonly Rule[];
   readonly thresholds?: Thresholds;
+  /** Öneri kalite ölçümü için test enjeksiyonu (bkz. `suggest-quality.ts`). */
+  readonly suggest?: SuggestQualityOptions;
 }
 
-/** Sentetik katalog → denetim → metrikler → Markdown raporu. Tek geçişte, yan etkisiz. */
+/**
+ * Sentetik katalog → denetim → metrikler → Markdown raporu. Tek geçişte, yan etkisiz.
+ *
+ * NOT: Bu fonksiyon öneri kalite bölümünü İÇERMEZ (ölçüm asenkron). Dokümanı üreten akış
+ * `runEvalFull`'dur; `runEval` kural bazlı çekirdek koşu olarak korunur.
+ */
 export function runEval(
   config: EvalConfig = DEFAULT_EVAL_CONFIG,
   options: EvalRunOptions = {},
@@ -63,7 +72,56 @@ export function runEval(
     meta: generated.meta,
     rules,
     violations,
+    suggest: null,
+    suggestThresholdEnforced: false,
   });
 
   return { config, generation: generated.meta, report, markdown, violations };
+}
+
+export interface FullEvalRun extends EvalRun {
+  /** Mock istemciyle ölçülen öneri kalite kontrolü (canlı model DEĞİL). */
+  readonly suggest: SuggestQualityReport;
+  /** Yalnızca öneri kalite eşiğinden gelen ihlaller. */
+  readonly suggestViolations: readonly string[];
+}
+
+/**
+ * `pnpm run eval` akışı: kural bazlı koşu + mock istemciyle öneri kalite kontrolü.
+ * Dokümanı bu fonksiyon üretir; `eval:check` bu metni birebir karşılaştırır.
+ */
+export async function runEvalFull(
+  config: EvalConfig = DEFAULT_EVAL_CONFIG,
+  options: EvalRunOptions = {},
+): Promise<FullEvalRun> {
+  const rules = options.rules ?? RULE_CATALOG;
+  const thresholds = options.thresholds ?? DEFAULT_THRESHOLDS;
+
+  const base = runEval(config, options);
+  const suggest = await runSuggestQuality(config, options.suggest);
+  // Öneri kalite eşiği varsayılan koşuya kalibre edilmiştir: farklı ürün/hata sayısıyla koşulunca
+  // geçme oranı örneklem değişimi yüzünden oynar ve yanlış alarm üretir. Bu yüzden yalnızca
+  // varsayılan parametrelerde denetlenir (rapor bunu açıkça yazar).
+  const enforceSuggest = isDefaultEvalConfig(config);
+  const suggestViolations = enforceSuggest ? checkSuggestThreshold(suggest, thresholds) : [];
+  const violations = [...base.violations, ...suggestViolations];
+  const markdown = renderMarkdown(base.report, {
+    config,
+    meta: base.generation,
+    rules,
+    violations,
+    suggest,
+    suggestThresholdEnforced: enforceSuggest,
+  });
+
+  return { ...base, suggest, suggestViolations, violations, markdown };
+}
+
+/** Koşu, eşiklerin kalibre edildiği varsayılan parametrelerle mi yapıldı. */
+function isDefaultEvalConfig(config: EvalConfig): boolean {
+  return (
+    config.seed === DEFAULT_EVAL_CONFIG.seed &&
+    config.productCount === DEFAULT_EVAL_CONFIG.productCount &&
+    config.defectsPerKind === DEFAULT_EVAL_CONFIG.defectsPerKind
+  );
 }

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-import { DEFAULT_EVAL_CONFIG, runEval } from './harness.ts';
+import { DEFAULT_EVAL_CONFIG, runEvalFull } from './harness.ts';
 import { formatPercent } from './metrics.ts';
 
 import type { EvalConfig } from './harness.ts';
@@ -92,7 +92,7 @@ function printHelp(): void {
   );
 }
 
-export function main(argv: readonly string[] = process.argv.slice(2)): number {
+export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<number> {
   let options: CliOptions;
   try {
     options = parseArgs(argv);
@@ -106,16 +106,17 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
     return 0;
   }
 
-  const run = runEval(options.config);
+  const run = await runEvalFull(options.config);
   const totals = run.report.totals;
   const summary = [
     `Ürün: ${totals.productCount} · etiketli hata: ${totals.injectedDefects} · bulgu: ${totals.findings}`,
     `Genel precision ${formatPercent(totals.precision)} · recall ${formatPercent(totals.recall)} · F1 ${formatPercent(totals.f1)}`,
+    `Öneri kalite (mock): ${run.suggest.suggestions}/${run.suggest.requests} öneri · genel geçme ${formatPercent(run.suggest.passRate)} (${run.suggest.passed}/${run.suggest.expected})`,
   ];
 
   if (options.json) {
     process.stdout.write(
-      `${JSON.stringify({ config: run.config, totals, rules: run.report.rules }, null, 2)}\n`,
+      `${JSON.stringify({ config: run.config, totals, rules: run.report.rules, suggest: run.suggest }, null, 2)}\n`,
     );
   }
 
@@ -159,5 +160,7 @@ export function main(argv: readonly string[] = process.argv.slice(2)): number {
 
 const invokedDirectly = process.argv[1]?.includes('cli') ?? false;
 if (invokedDirectly) {
-  process.exitCode = main();
+  void main().then((code) => {
+    process.exitCode = code;
+  });
 }

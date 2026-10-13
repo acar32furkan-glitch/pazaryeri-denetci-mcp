@@ -69,6 +69,32 @@ eşleştirir.
 
 - Yok.
 
+## LLM öneri kalite kontrolü (mock istemci — harness doğrulaması)
+
+> **UYARI / DÜRÜSTLÜK:** Bu bölüm **mock LLM (sahte istemci) ile yapılan HARNESS
+> doğrulamasıdır; canlı model ölçümü YAPILMADI.** Buradaki sayılar bir modelin öneri kalitesini
+> **ölçmez**; öneri hattının (prompt → şema doğrulaması → öneri → öneriyi uygula → ilgili
+> deterministik kuralları yeniden çalıştır) uçtan uca çalıştığını doğrular. Gerçek model kalitesi
+> için `anthropic` istemcisiyle ayrı bir koşu gerekir; aşağıdaki oranlar o ölçümün yerine geçmez.
+
+- İstemci: `mock-demo` (deterministik sahte istemci, önbellek açık)
+- Düzeltilebilir bulgusu olan ürün: **140**
+- Öneri isteği: **140** · üretilen öneri: **140** · alınamayan: 0
+- Önbellek: 1 isabet · aynı istek tekrarında önbellekten geldi mi: evet
+- Eşik denetimi: uygulandı (varsayılan koşu).
+
+| Öneri alanı | Yeniden denetlenen kurallar | Beklenen | Üretilen | Geçen | Geçme oranı |
+| --- | --- | --- | --- | --- | --- |
+| `title` | `TITLE_LENGTH`, `TITLE_KEYWORD_STUFFING` | 60 | 60 | 60 | 100.0% |
+| `descriptionHtml` | `DESC_MISSING`, `DESC_TOO_SHORT`, `DESC_UNSAFE_HTML` | 60 | 60 | 60 | 100.0% |
+| `seoTitle` | `SEO_META_MISSING` | 20 | 20 | 20 | 100.0% |
+| `seoDescription` | `SEO_META_MISSING` | 20 | 20 | 20 | 100.0% |
+| **GENEL** | — | 160 | 160 | 160 | 100.0% |
+
+### İlgili kuralları geçmeyen öneriler
+
+- Yok.
+
 ## CI eşiği
 
-- Eşik ihlali yok: tüm kurallar precision %100 ve recall %100.
+- Eşik ihlali yok: tüm kurallar precision %100 ve recall %100; mock öneri kalite kontrolü eşiği sağlanıyor.
