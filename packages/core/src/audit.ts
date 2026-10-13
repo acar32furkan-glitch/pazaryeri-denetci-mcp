@@ -1,0 +1,96 @@
+import { RULE_CATALOG } from './rules/index.ts';
+import { runRules, sortFindings } from './rule.ts';
+
+import type { Rule, RuleContext } from './rule.ts';
+import type { Catalog, ChannelListing, Finding, Product, Severity } from './types.ts';
+
+export interface AuditOptions {
+  /** Varsayılan: tüm kural kayıt defteri. */
+  readonly rules?: readonly Rule[];
+  /** Kanal beslemeleri (aynı SKU'nun pazaryeri satırları); varsayılan: boş. */
+  readonly listings?: readonly ChannelListing[];
+  /** Uzun koşularda ilerleme bildirimi (opsiyonel, yan etkisi yok). */
+  readonly onProgress?: (done: number, total: number) => void;
+}
+
+export interface AuditSummary {
+  readonly productCount: number;
+  readonly findingCount: number;
+  readonly bySeverity: Readonly<Record<Severity, number>>;
+  readonly byRule: Readonly<Record<string, number>>;
+}
+
+export interface AuditResult {
+  readonly findings: readonly Finding[];
+  readonly summary: AuditSummary;
+}
+
+/** Kanal beslemelerini SKU'ya göre gruplar (bir SKU birden çok kanalda olabilir). */
+export function groupListingsBySku(
+  listings: readonly ChannelListing[],
+): Map<string, ChannelListing[]> {
+  const groups = new Map<string, ChannelListing[]>();
+  for (const listing of listings) {
+    const sku = listing.sku?.trim();
+    if (sku === undefined || sku === '') continue;
+    const existing = groups.get(sku);
+    if (existing === undefined) {
+      groups.set(sku, [listing]);
+    } else {
+      existing.push(listing);
+    }
+  }
+  return groups;
+}
+
+export function summarize(findings: readonly Finding[], productCount: number): AuditSummary {
+  const bySeverity: Record<Severity, number> = { critical: 0, major: 0, minor: 0 };
+  const byRule: Record<string, number> = {};
+  for (const finding of findings) {
+    bySeverity[finding.severity] += 1;
+    byRule[finding.ruleId] = (byRule[finding.ruleId] ?? 0) + 1;
+  }
+  return {
+    productCount,
+    findingCount: findings.length,
+    bySeverity,
+    byRule,
+  };
+}
+
+export function auditProduct(
+  product: Product,
+  rules: readonly Rule[] = RULE_CATALOG,
+  listings: readonly ChannelListing[] = [],
+): Finding[] {
+  const context: RuleContext = { product, listings };
+  return runRules(rules, context);
+}
+
+/** Tüm kataloğu denetler; bulgular kararlı biçimde sıralanır (ADR-007). */
+export function auditCatalog(catalog: Catalog, options: AuditOptions = {}): AuditResult {
+  const rules = options.rules ?? RULE_CATALOG;
+  const listingsBySku = groupListingsBySku(options.listings ?? catalog.listings);
+  const collected: Finding[] = [];
+
+  for (const [index, product] of catalog.products.entries()) {
+    const variantSkus = product.variants
+      .map((variant) => variant.sku?.trim() ?? '')
+      .filter((sku) => sku !== '');
+    const productListings: ChannelListing[] = [];
+    for (const sku of variantSkus) {
+      productListings.push(...(listingsBySku.get(sku) ?? []));
+    }
+    collected.push(...auditProduct(product, rules, productListings));
+    options.onProgress?.(index + 1, catalog.products.length);
+  }
+
+  const findings = sortFindings(collected);
+  return { findings, summary: summarize(findings, catalog.products.length) };
+}
+
+/** Önem sırasına göre en kritik N bulgu. */
+export function topFindings(result: AuditResult, limit: number): readonly Finding[] {
+  if (limit <= 0) return [];
+  return result.findings.slice(0, limit);
+}
