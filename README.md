@@ -31,7 +31,7 @@ Demoyu yerelde üç komutla çalıştırabilirsiniz:
 ```bash
 pnpm install
 pnpm --filter @pazaryeri-denetci/web run build
-pnpm --filter @pazaryeri-denetci/web exec next start -p 3220   # http://127.0.0.1:3220
+pnpm --filter @pazaryeri-denetci/web run start   # http://localhost:3000
 ```
 
 Demo üç sentetik katalog profilinden birini seçip denetimi çalıştırır; özet kartlarını, en sık 5
@@ -229,6 +229,22 @@ Tam liste ve "neler denenip bırakıldı": **[docs/DECISIONS.md](docs/DECISIONS.
 | `packages/mcp-server` | MCP araçları/kaynakları/prompt'ları, stdio + Streamable HTTP taşıma    |
 | `apps/web`            | Next.js (App Router) demo: profil seç, denetle, JSON/Markdown indir    |
 | `docs/`               | DECISIONS · ARCHITECTURE · MCP · LLM · EVAL · PERFORMANS · DEMO        |
+
+## Sorun giderme
+
+**Port kullanımda / `EACCES: permission denied` (Windows).** Windows bazı port aralıklarını rezerve
+eder; bu makinede `3041–3140` aralığı ayrılmış durumda
+(`netsh int ipv4 show excludedportrange protocol=tcp`). Böyle bir aralığa denk gelirseniz başka port
+seçin:
+
+```bash
+pnpm --filter @pazaryeri-denetci/web exec next start -p 3220
+```
+
+`pnpm … run start -- -p 3220` biçimi çalışmaz (argüman Next'e bozuk geçer); `exec next start` kullanın.
+
+**`pnpm install` kurallara takılıyor.** Kilit dosyasına sadık kurulum için `pnpm install
+--frozen-lockfile` kullanın (CI da bunu kullanır).
 
 ## Sınırlılıklar (dürüstçe)
 
