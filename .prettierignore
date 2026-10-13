@@ -7,3 +7,8 @@ dist/
 # EVAL.md üretici tarafından yazılır ve `eval --check` dosyayı birebir karşılaştırır:
 # prettier bu dosyayı yeniden biçimlendirmemeli.
 docs/EVAL.md
+# Next.js'in ürettiği tip bildirimi: elle biçimlendirilmez, her derlemede yeniden yazılır.
+apps/web/next-env.d.ts
+# Next.js derleme çıktısı
+apps/web/.next/
+apps/web/tsconfig.tsbuildinfo
