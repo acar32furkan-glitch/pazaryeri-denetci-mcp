@@ -11,10 +11,22 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "esbuild src/bin.ts src/index.ts --bundle --format=esm --platform=node --target=node20 --outdir=dist --packages=external --sourcemap",
+    "start": "node dist/bin.js"
+  },
+  "bin": {
+    "pazaryeri-denetci-mcp": "./dist/bin.js"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.3.1",
+    "@pazaryeri-denetci/catalog-io": "workspace:*",
     "@pazaryeri-denetci/core": "workspace:*",
-    "@pazaryeri-denetci/mock-data": "workspace:*"
+    "@pazaryeri-denetci/mock-data": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.3.1",
+    "esbuild": "^0.28.2"
   }
 }

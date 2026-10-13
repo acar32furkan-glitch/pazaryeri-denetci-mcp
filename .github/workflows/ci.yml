@@ -32,6 +32,8 @@ jobs:
         run: pnpm run format:check
       - name: Tip denetimi
         run: pnpm run typecheck
+      - name: Derleme (MCP sunucusunun çalıştırılabilir girdisi)
+        run: pnpm run build
       - name: Testler
         run: pnpm run test
       - name: Eval (kural bazlı precision/recall eşiği + rapor güncel mi)
