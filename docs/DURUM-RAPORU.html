@@ -448,9 +448,17 @@
           <td>taramalar (boş sonuç)</td>
         </tr>
         <tr>
-          <td>Yayın (GitHub + Vercel)</td>
+          <td>GitHub yayını: public depo, v0.1.0 release, CI yeşil</td>
+          <td class="n">yayında</td>
+          <td>
+            <code>github.com/acar32furkan-glitch/pazaryeri-denetci-mcp</code> (55 commit · Actions
+            run 38435945370 · 47 sn · success)
+          </td>
+        </tr>
+        <tr>
+          <td>Vercel canlı demo</td>
           <td class="n">onay bekliyor</td>
-          <td>aşağıdaki iki komut</td>
+          <td><code>vercel login</code></td>
         </tr>
       </tbody>
     </table>
@@ -484,16 +492,12 @@
 
     <h2>Senden bekleyen aksiyonlar (yayın)</h2>
     <div class="box warn">
-      <strong>1) GitHub push izni:</strong> yerel <code>gh</code> token kapsamları
-      <code>gist, read:org, repo</code> — <code>workflow</code> <strong>yok</strong>, yani
-      <code>.github/workflows/</code> içeren push reddedilir. Gereken:
-      <code>gh auth refresh -s workflow</code>.<br />
-      <strong>2) Depo oluşturma onayı:</strong> uzak depo henüz yok. Onay verirsen
-      <code>gh repo create pazaryeri-denetci-mcp --public --source=. --push</code> ile yayınlarım
-      (senin hesabında public depo açılır — bu yüzden onayını istiyorum).<br />
-      <strong>3) Vercel deploy:</strong> bu makinede Vercel CLI girişli değil.
-      <code>vercel login</code> sonrası <code>apps/web</code>'i yayına alıp canlı demo bağlantısını
-      README'ye eklerim.
+      <strong>✅ 1) GitHub yayını tamamlandı:</strong> public depo oluşturuldu, 55 commit push
+      edildi, GitHub Actions yeşil, <code>v0.1.0</code> release yayınlandı.<br />
+      <strong>⏳ 2) Vercel canlı demo — kalan tek adım:</strong> <code>vercel login</code> cihaz
+      akışı başlatıldı; tarayıcıda onayladığında <code>apps/web</code>'i yayına alıp canlı demo
+      bağlantısını README'ye ve bu rapora eklerim. Demo tamamen sentetik veriyle çalışır; hiçbir API
+      anahtarı gerekmez.
     </div>
 
     <h2>Yayın adımları (senin iki komutundan sonra bende)</h2>

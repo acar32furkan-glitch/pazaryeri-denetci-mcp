@@ -3,10 +3,15 @@
 **Pazaryeri ürün kataloğunu deterministik kurallarla denetleyen, bulguları önem sırasına göre
 raporlayan ve bunu bir MCP sunucusu üzerinden AI ajanlarına açan açık kaynak araç.**
 
+[![CI](https://github.com/acar32furkan-glitch/pazaryeri-denetci-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/acar32furkan-glitch/pazaryeri-denetci-mcp/actions/workflows/ci.yml)
 ![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-v0.1.0-informational)
 ![lisans](https://img.shields.io/badge/lisans-MIT-blue)
 ![node](https://img.shields.io/badge/node-%3E%3D20-informational)
 ![testler](https://img.shields.io/badge/testler-286%20ye%C5%9Fil-brightgreen)
+
+Depo: **[github.com/acar32furkan-glitch/pazaryeri-denetci-mcp](https://github.com/acar32furkan-glitch/pazaryeri-denetci-mcp)**
+· sürüm: **[v0.1.0 release](https://github.com/acar32furkan-glitch/pazaryeri-denetci-mcp/releases/tag/v0.1.0)**
+· CI: GitHub Actions'ta yeşil (lint · format · typecheck · derleme · 286 test · eval kapısı · web derlemesi)
 
 > **Durum: Faz 0–5 tamam.** 17 denetim kuralı, CSV içe aktarma, **7 araçlı** MCP sunucusu (stdio +
 > Streamable HTTP), Next.js demosu ve LLM öneri katmanı çalışıyor; ölçülmüş sonuçlar aşağıda.
