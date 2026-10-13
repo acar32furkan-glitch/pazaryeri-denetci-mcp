@@ -1,0 +1,14 @@
+# Satır sonları: depoda VE çalışma ağacında daima LF.
+#
+# Neden: Windows'ta `git clone`, kullanıcının global `core.autocrlf` ayarı yüzünden dosyaları CRLF
+# ile açar; prettier (endOfLine: lf) ve ESLint kapıları o zaman 147 dosyada "Code style issues"
+# verip `pnpm gates`'i düşürür. Bu, temiz klonda gerçekten gözlendi (docs/DECISIONS.md, ADR-017).
+# CI Linux'ta bu sorunu görmediği için hata gizli kalıyordu.
+* text=auto eol=lf
+
+# İkili dosyalar: içerik dönüşümü yapılmaz.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
