@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: ['dependencies']
+    groups:
+      dev-tools:
+        patterns: ['eslint*', '@eslint/*', 'typescript*', 'prettier', 'vitest*', 'tsx', '@types/*']
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+    labels: ['dependencies']
+    groups:
+      actions:
+        patterns: ['*']

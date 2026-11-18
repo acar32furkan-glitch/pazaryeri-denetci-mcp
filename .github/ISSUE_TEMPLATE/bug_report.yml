@@ -1,0 +1,41 @@
+name: Hata bildirimi
+description: Beklenmeyen bir davranış veya çökme bildirin.
+title: '[Bug]: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Teşekkürler! Lütfen **gerçek mağaza verisi, müşteri adı veya kimlik bilgisi paylaşmayın.**
+        Sentetik örnek katalogla yeniden üretilebilen bir senaryo en hızlı sonucu verir.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Ne oldu?
+      description: Beklediğiniz davranış ile gerçekleşen davranış.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Yeniden üretme adımları
+      description: Çalıştırdığınız komut ve (varsa) çıktı.
+      placeholder: |
+        pnpm run audit:csv -- ornek.csv
+        ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Sürüm
+      description: '`CHANGELOG.md` içindeki sürüm veya commit özeti'
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Ortam
+      placeholder: 'Windows 11 · Node 22 · pnpm 12'
+    validations:
+      required: false
